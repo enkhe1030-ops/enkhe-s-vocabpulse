@@ -6,8 +6,8 @@ from datetime import datetime
 st.set_page_config(page_title="VocabPulse Cloud", page_icon="⚡", layout="centered")
 
 # Энд өөрийн Supabase мэдээллээ оруулна уу
-SUPABASE_URL = "https://aopbyjndymjfkvkbxsui.supabase.co/rest/v1/"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0"
+SUPABASE_URL = "YOUR_SUPABASE_URL"
+SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
 
 @st.cache_resource
 def init_supabase():
@@ -21,27 +21,36 @@ if "user_data" not in st.session_state:
     st.session_state.user_data = None
 
 def load_user_data(username):
-    response = supabase.table("user_data").select("data").eq("username", username).execute()
-    if response.data:
-        return response.data[0]["data"]
-    else:
-        default_data = {
-            "words": [
-                {"id": 1, "word": "recommend", "phonetic": "/ˌrek.əˈmend/", "translation": "Санал болгох, зөвлөх", "example": "I highly recommend reading this book."},
-                {"id": 2, "word": "resilient", "phonetic": "/rɪˈzɪl.jənt/", "translation": "Хатуужилтай, уян хатан", "example": "She is a resilient person."}
-            ],
-            "streak": 1,
-            "examHistory": []
-        }
-        supabase.table("user_data").insert({"username": username, "data": default_data}).execute()
-        return default_data
+    try:
+        response = supabase.table("user_data").select("data").eq("username", username).execute()
+        if response.data:
+            return response.data[0]["data"]
+    except Exception:
+        pass
+    
+    default_data = {
+        "words": [
+            {"id": 1, "word": "recommend", "phonetic": "/ˌrek.əˈmend/", "translation": "Санал болгох, зөвлөх", "example": "I highly recommend reading this book."},
+            {"id": 2, "word": "resilient", "phonetic": "/rɪˈzɪl.jənt/", "translation": "Хатуужилтай, уян хатан", "example": "She is a resilient person."}
+        ],
+        "streak": 1,
+        "examHistory": []
+    }
+    try:
+        supabase.table("user_data").upsert({"username": username, "data": default_data}).execute()
+    except Exception:
+        pass
+    return default_data
 
 def save_user_data():
     if st.session_state.user:
-        supabase.table("user_data").upsert({
-            "username": st.session_state.user,
-            "data": st.session_state.user_data
-        }).execute()
+        try:
+            supabase.table("user_data").upsert({
+                "username": st.session_state.user,
+                "data": st.session_state.user_data
+            }).execute()
+        except Exception as e:
+            st.error(f"Хадгалахад алдаа гарлаа: {e}")
 
 if not st.session_state.user:
     st.title("⚡ VocabPulse Cloud")
@@ -54,13 +63,16 @@ if not st.session_state.user:
         l_pass = st.text_input("Нууц үг", type="password", key="l_pass")
         if st.button("Нэвтрэх", type="primary"):
             if l_user and l_pass:
-                res = supabase.table("users").select("*").eq("username", l_user).execute()
-                if res.data and res.data[0]["password"] == base64.b64encode(l_pass.encode()).decode():
-                    st.session_state.user = l_user
-                    st.session_state.user_data = load_user_data(l_user)
-                    st.rerun()
-                else:
-                    st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
+                try:
+                    res = supabase.table("users").select("*").eq("username", l_user).execute()
+                    if res.data and res.data[0]["password"] == base64.b64encode(l_pass.encode()).decode():
+                        st.session_state.user = l_user
+                        st.session_state.user_data = load_user_data(l_user)
+                        st.rerun()
+                    else:
+                        st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
+                except Exception as e:
+                    st.error(f"Холболтын алдаа: {e}")
             else:
                 st.warning("Бүх талбарыг бөглөнө үү.")
 
@@ -72,19 +84,22 @@ if not st.session_state.user:
         
         if st.button("Бүртгэл үүсгэх", type="primary"):
             if r_user and r_pass and r_first and r_last:
-                check = supabase.table("users").select("username").eq("username", r_user).execute()
-                if check.data:
-                    st.error("Энэ нэвтрэх нэр аль хэдийн бүртгэгдсэн байна!")
-                else:
-                    encoded_pass = base64.b64encode(r_pass.encode()).decode()
-                    supabase.table("users").insert({
-                        "username": r_user, "password": encoded_pass,
-                        "firstname": r_first, "lastname": r_last
-                    }).execute()
-                    st.session_state.user = r_user
-                    st.session_state.user_data = load_user_data(r_user)
-                    st.success("Амжилттай бүртгэгдлээ!")
-                    st.rerun()
+                try:
+                    check = supabase.table("users").select("username").eq("username", r_user).execute()
+                    if check.data:
+                        st.error("Энэ нэвтрэх нэр аль хэдийн бүртгэгдсэн байна!")
+                    else:
+                        encoded_pass = base64.b64encode(r_pass.encode()).decode()
+                        supabase.table("users").insert({
+                            "username": r_user, "password": encoded_pass,
+                            "firstname": r_first, "lastname": r_last
+                        }).execute()
+                        st.session_state.user = r_user
+                        st.session_state.user_data = load_user_data(r_user)
+                        st.success("Амжилттай бүртгэгдлээ!")
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"Бүртгэхэд алдаа гарлаа: {e}")
             else:
                 st.warning("Бүх талбарыг бөглөнө үү.")
                 
