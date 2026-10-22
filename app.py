@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="VocabPulse Cloud", page_icon="⚡", layout="centered")
 
 # Энд өөрийн Supabase мэдээллээ оруулна уу
-SUPABASE_URL = "https://aopbyjndymjfkvkbxsui.supabase.co/rest/v1/"
+SUPABASE_URL = "https://aopbyjndymjfkvkbxsui.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0"
 
 @st.cache_resource
