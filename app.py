@@ -15,7 +15,7 @@ INDEX_HTML = '''<!DOCTYPE html>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Supabase JS SDK -->
+    <!-- Supabase JS SDK (UMD stable version for browser) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -47,7 +47,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             <div id="loginForm" class="flex flex-col gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Имэйл хаяг</label>
-                    <input type="email" id="loginEmail" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder=" жишээ: user@gmail.com" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-indigo-500 font-semibold">
+                    <input type="email" id="loginEmail" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="жишээ: user@gmail.com" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-indigo-500 font-semibold">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Нууц үг</label>
@@ -411,10 +411,18 @@ INDEX_HTML = '''<!DOCTYPE html>
     </main>
 
     <script>
-        // Supabase Тохиргоо (Энд өөрийн URL болон ANON KEY-гээ оруулна уу)
-        const SUPABASE_URL = 'https://aopbyjndymjfkvkbxsui.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Supabase Тохиргоо (Өөрийн Supabase Project URL болон Anon Key-г энд оруулна уу)
+        const SUPABASE_URL = 'https://энд_өөрийн_project_url_оруулна.supabase.co';
+        const SUPABASE_ANON_KEY = 'энд_өөрийн_anon_key_оруулна';
+        
+        let supabaseClient = null;
+        try {
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.error("Supabase init error:", e);
+        }
 
         function escapeHTML(str) {
             if (!str) return '';
@@ -424,12 +432,6 @@ INDEX_HTML = '''<!DOCTYPE html>
         }
 
         const SRS_INTERVALS = [1, 3, 7, 21, 60];
-
-        const localDictionary = {
-            'recommend': { translation: 'Санал болгох, зөвлөх', example: 'I highly recommend reading this book.' },
-            'resilient': { translation: 'Хатуужилтай, уян хатан', example: 'She is a resilient person after all hardships.' },
-            'eager': { translation: 'Хүсэн хүлээсэн, эрмэлзэлтэй', example: 'He was eager to learn new skills.' }
-        };
 
         const core1500Bank = [
             { id: 'a1_1', word: 'apple', level: 'A1', translation: 'Алим', example: 'I eat an apple every day.' },
@@ -446,7 +448,6 @@ INDEX_HTML = '''<!DOCTYPE html>
         let currentQuizQuestionText = '';
         let currentTargetQuizWord = null;
         let activeQuizWords = [];
-        let constructedWord = "";
         let examQuestions = [];
         let examCurrentIdx = 0;
         let examScoreCount = 0;
@@ -468,6 +469,10 @@ INDEX_HTML = '''<!DOCTYPE html>
         }
 
         async function checkAuth() {
+            if (!supabaseClient) {
+                alert("Supabase холболт амжилтгүй боллоо. URL болон Key шалгана уу.");
+                return;
+            }
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 currentUserSession = session.user;
@@ -894,6 +899,7 @@ INDEX_HTML = '''<!DOCTYPE html>
 
             const grid = document.getElementById('examOptionsGrid');
             grid.innerHTML = '';
+            opts.optsContainer?.innerHTML = '';
             opts.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition";
