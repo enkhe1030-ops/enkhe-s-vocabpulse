@@ -6,8 +6,8 @@ from datetime import datetime
 st.set_page_config(page_title="VocabPulse Cloud", page_icon="⚡", layout="centered")
 
 # Энд өөрийн Supabase мэдээллээ оруулна уу
-SUPABASE_URL = "YOUR_SUPABASE_URL"
-SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY"
+SUPABASE_URL = "https://aopbyjndymjfkvkbxsui.supabase.co/rest/v1/"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0"
 
 @st.cache_resource
 def init_supabase():
@@ -33,7 +33,7 @@ def get_default_words():
 def save_user_data():
     if st.session_state.user:
         try:
-            supabase.table("users").update({
+            supabase.table("app_users").update({
                 "data": st.session_state.user_data
             }).eq("username", st.session_state.user).execute()
         except Exception as e:
@@ -51,7 +51,7 @@ if not st.session_state.user:
         if st.button("Нэвтрэх", type="primary"):
             if l_user and l_pass:
                 try:
-                    res = supabase.table("users").select("*").eq("username", l_user).execute()
+                    res = supabase.table("app_users").select("*").eq("username", l_user).execute()
                     if res.data and len(res.data) > 0:
                         user_record = res.data[0]
                         if user_record["password"] == base64.b64encode(l_pass.encode()).decode():
@@ -76,13 +76,13 @@ if not st.session_state.user:
         if st.button("Бүртгэл үүсгэх", type="primary"):
             if r_user and r_pass and r_first and r_last:
                 try:
-                    check = supabase.table("users").select("username").eq("username", r_user).execute()
+                    check = supabase.table("app_users").select("username").eq("username", r_user).execute()
                     if check.data and len(check.data) > 0:
                         st.error("Энэ нэвтрэх нэр аль хэдийн бүртгэгдсэн байна!")
                     else:
                         encoded_pass = base64.b64encode(r_pass.encode()).decode()
                         initial_data = get_default_words()
-                        supabase.table("users").insert({
+                        supabase.table("app_users").insert({
                             "username": r_user,
                             "password": encoded_pass,
                             "firstname": r_first,
