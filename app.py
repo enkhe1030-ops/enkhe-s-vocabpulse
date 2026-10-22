@@ -20,15 +20,8 @@ if "user" not in st.session_state:
 if "user_data" not in st.session_state:
     st.session_state.user_data = None
 
-def load_user_data(username):
-    try:
-        response = supabase.table("user_data").select("data").eq("username", username).execute()
-        if response.data:
-            return response.data[0]["data"]
-    except Exception:
-        pass
-    
-    default_data = {
+def get_default_words():
+    return {
         "words": [
             {"id": 1, "word": "recommend", "phonetic": "/ˌrek.əˈmend/", "translation": "Санал болгох, зөвлөх", "example": "I highly recommend reading this book."},
             {"id": 2, "word": "resilient", "phonetic": "/rɪˈzɪl.jənt/", "translation": "Хатуужилтай, уян хатан", "example": "She is a resilient person."}
@@ -36,19 +29,13 @@ def load_user_data(username):
         "streak": 1,
         "examHistory": []
     }
-    try:
-        supabase.table("user_data").upsert({"username": username, "data": default_data}).execute()
-    except Exception:
-        pass
-    return default_data
 
 def save_user_data():
     if st.session_state.user:
         try:
-            supabase.table("user_data").upsert({
-                "username": st.session_state.user,
+            supabase.table("users").update({
                 "data": st.session_state.user_data
-            }).execute()
+            }).eq("username", st.session_state.user).execute()
         except Exception as e:
             st.error(f"Хадгалахад алдаа гарлаа: {e}")
 
@@ -65,14 +52,18 @@ if not st.session_state.user:
             if l_user and l_pass:
                 try:
                     res = supabase.table("users").select("*").eq("username", l_user).execute()
-                    if res.data and res.data[0]["password"] == base64.b64encode(l_pass.encode()).decode():
-                        st.session_state.user = l_user
-                        st.session_state.user_data = load_user_data(l_user)
-                        st.rerun()
+                    if res.data and len(res.data) > 0:
+                        user_record = res.data[0]
+                        if user_record["password"] == base64.b64encode(l_pass.encode()).decode():
+                            st.session_state.user = l_user
+                            st.session_state.user_data = user_record["data"]
+                            st.rerun()
+                        else:
+                            st.error("Нууц үг буруу байна!")
                     else:
-                        st.error("Нэвтрэх нэр эсвэл нууц үг буруу байна!")
+                        st.error("Бүртгэлтэй хэрэглэгч олдсонгүй!")
                 except Exception as e:
-                    st.error(f"Холболтын алдаа: {e}")
+                    st.error(f"Нэвтрэхэд алдаа гарлаа: {e}")
             else:
                 st.warning("Бүх талбарыг бөглөнө үү.")
 
@@ -86,16 +77,20 @@ if not st.session_state.user:
             if r_user and r_pass and r_first and r_last:
                 try:
                     check = supabase.table("users").select("username").eq("username", r_user).execute()
-                    if check.data:
+                    if check.data and len(check.data) > 0:
                         st.error("Энэ нэвтрэх нэр аль хэдийн бүртгэгдсэн байна!")
                     else:
                         encoded_pass = base64.b64encode(r_pass.encode()).decode()
+                        initial_data = get_default_words()
                         supabase.table("users").insert({
-                            "username": r_user, "password": encoded_pass,
-                            "firstname": r_first, "lastname": r_last
+                            "username": r_user,
+                            "password": encoded_pass,
+                            "firstname": r_first,
+                            "lastname": r_last,
+                            "data": initial_data
                         }).execute()
                         st.session_state.user = r_user
-                        st.session_state.user_data = load_user_data(r_user)
+                        st.session_state.user_data = initial_data
                         st.success("Амжилттай бүртгэгдлээ!")
                         st.rerun()
                 except Exception as e:
