@@ -155,7 +155,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                 </select>
             </div>
 
-            <div id="bankWordList" class="flex-1 overflow-y-auto flex flex-col divide-y divide-slate-100 border border-slate-200 rounded-2xl pr-1"></div>
+            <div id="bankWordList" class="flex-1 overflow-y-auto flex flex-col divide-y divide-slate-100 border border-slate-200 rounded-2xl pr-1" onscroll="handleBankScroll()"></div>
         </div>
     </div>
 
@@ -227,8 +227,6 @@ INDEX_HTML = '''<!DOCTYPE html>
                     </div>
                 </div>
                 <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                    <label class="text-xs font-semibold text-slate-500">Өдөрт/түвшин:</label>
-                    <input id="dailyWordCount" type="number" min="1" max="20" value="5" onchange="setDailyWordCount(this.value)" class="w-14 border rounded-lg px-2 py-1 text-xs font-bold">
                     <button onclick="openBankModal()" class="bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 text-xs px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5">
                         <i class="fa-solid fa-database"></i> Нийт үгсийн сан
                     </button>
@@ -291,33 +289,30 @@ INDEX_HTML = '''<!DOCTYPE html>
             <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b border-slate-100">
                     <div>
-                        <h3 class="font-extrabold text-lg text-slate-800">Үгсийн Сорилт</h3>
-                        <p class="text-xs text-slate-500">Зөв хариулсан үгс сорилтоос хасагдана</p>
-                    </div>
-                    
-                    <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold gap-1 flex-wrap justify-center">
-                        <button onclick="setQuizMode('en-mn')" id="quizModeEnMn" class="px-3 py-1.5 rounded-lg bg-white text-indigo-600 shadow-sm">Англи ➔ Монгол</button>
-                        <button onclick="setQuizMode('mn-en')" id="quizModeMnEn" class="px-3 py-1.5 rounded-lg text-slate-500">Монгол ➔ Англи</button>
+                        <h3 class="font-extrabold text-lg text-slate-800">Үгсийн Сорилт (Захиалгат үсгээр угсрах)</h3>
+                        <p class="text-xs text-slate-500">Үсгүүдийг зөв дарааллаар товшиж үг бүтгэнэ үү</p>
                     </div>
                 </div>
 
                 <div id="quizContent" class="flex flex-col gap-6">
-                    <div class="bg-indigo-50/70 p-6 rounded-2xl border border-indigo-100 text-center flex flex-col items-center gap-2">
-                        <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider" id="quizQuestionType">Асуулт</span>
-                        <div class="flex items-center justify-center gap-3">
-                            <h2 id="quizQuestion" class="text-2xl sm:text-3xl font-black text-slate-800">Word</h2>
-                            <button id="quizQuestionAudio" onclick="speakText(currentQuizQuestionText)" class="text-indigo-600 hover:text-indigo-800 text-xl"><i class="fa-solid fa-volume-high"></i></button>
-                        </div>
+                    <div class="bg-indigo-50/70 p-6 rounded-2xl border border-indigo-100 text-center flex flex-col items-center gap-3">
+                        <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider" id="quizQuestionType">Монгол орчуулга</span>
+                        <h2 id="quizQuestionMeaning" class="text-xl sm:text-2xl font-extrabold text-slate-800">Орчуулга</h2>
+                        <div class="text-xs text-slate-500 italic" id="quizQuestionExample">Жишээ өгүүлбэр</div>
+                        
+                        <!-- Word builder slots -->
+                        <div id="wordBuilderSlots" class="flex flex-wrap justify-center gap-2 my-2"></div>
                     </div>
 
-                    <div id="quizSentence" class="hidden text-center flex flex-col gap-3">
-                        <p id="quizSentenceText" class="text-lg font-semibold text-slate-700"></p>
-                        <div id="quizAnswerSlots" class="flex justify-center flex-wrap gap-1"></div>
-                        <div id="quizLetterTiles" class="flex justify-center flex-wrap gap-2"></div>
-                        <p id="quizTypingFeedback" class="text-sm font-bold"></p>
-                        <button id="quizNextSentence" disabled onclick="submitSentenceAnswer()" class="self-center px-5 py-2 rounded-xl bg-indigo-600 text-white font-bold disabled:opacity-40">Шалгах</button>
+                    <!-- Letter pool -->
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="text-xs font-bold text-slate-500">Доорх үсгүүдээс сонгоно уу:</div>
+                        <div id="letterPool" class="flex flex-wrap justify-center gap-2 max-w-md"></div>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="resetLetterBuilder()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold">Цэвэрлэх</button>
+                            <button onclick="checkLetterBuilder()" class="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">Шалгах</button>
+                        </div>
                     </div>
-                    <div id="quizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
                 </div>
 
                 <div id="quizCompleted" class="hidden text-center py-10 flex flex-col items-center gap-4">
@@ -326,7 +321,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                     </div>
                     <div>
                         <h3 class="text-2xl font-extrabold text-slate-800 mb-1">Баяр хүргэе! 🎉</h3>
-                        <p class="text-sm text-slate-500">Та бүх үгээ сайн тааж дуусгалаа!</p>
+                        <p class="text-sm text-slate-500">Та сорилтын бүх үгээ зөв угсарч дуусгалаа!</p>
                     </div>
                     <button onclick="resetQuiz()" class="mt-2 bg-indigo-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-indigo-700 transition">Дахин эхлүүлэх</button>
                 </div>
@@ -402,8 +397,21 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Жишээ өгүүлбэр</label>
                     <input type="text" id="newExample" placeholder="Жишээ: I highly recommend this book." class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-indigo-500">
                 </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Түвшин сонгох</label>
+                        <select id="newWordLevel" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 focus:outline-indigo-500">
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                            <option value="B1">B1</option>
+                            <option value="B2">B2</option>
+                            <option value="C1">C1</option>
+                            <option value="C2">C2</option>
+                        </select>
+                    </div>
+                </div>
                 <button onclick="addNewWord()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-100 mt-2">
-                    <i class="fa-solid fa-plus"></i> Жагсаалтад нэмэх
+                    <i class="fa-solid fa-plus"></i> Жагсаалтад болон Нийт санд нэмэх
                 </button>
             </div>
         </section>
@@ -411,7 +419,6 @@ INDEX_HTML = '''<!DOCTYPE html>
     </main>
 
     <script>
-        // Supabase Тохиргоо (Өөрийн Supabase Project URL болон Anon Key-г энд оруулна уу)
         const SUPABASE_URL = 'https://aopbyjndymjfkvkbxsui.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0';
         
@@ -431,39 +438,41 @@ INDEX_HTML = '''<!DOCTYPE html>
             );
         }
 
-        const SRS_INTERVALS = [1/24, 1, 3, 7, 14, 30, 60]; // 1 цаг, 1, 3, 7, 14, 30, 60 өдөр
+        const SRS_INTERVALS = [1/24, 1, 3, 7, 14, 30, 60];
 
-        // Түвшин бүрийн 100 түгээмэл үг; нийт 600 үг. Орчуулгыг банкнаас/онлайн толь бичгээс нөхөж болно.
         const levelWordLists = {
-          "A1": ["a", "an", "the", "I", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "my", "your", "his", "its", "our", "their", "this", "that", "these", "those", "who", "what", "where", "when", "why", "how", "yes", "no", "not", "all", "some", "any", "many", "much", "more", "most", "less", "few", "one", "two", "three", "first", "last", "new", "old", "good", "bad", "big", "small", "long", "short", "high", "low", "hot", "cold", "happy", "sad", "easy", "hard", "right", "wrong", "same", "different", "important", "possible", "able", "can", "could", "will", "would", "should", "must", "may", "go", "come", "get", "make", "do", "have", "be", "say", "see", "know", "think", "want", "need", "like", "love", "work", "play", "eat", "drink", "sleep", "read", "write"],
-          "A2": ["about", "above", "across", "after", "against", "along", "among", "around", "before", "behind", "below", "beside", "between", "beyond", "during", "inside", "outside", "near", "next", "onto", "over", "past", "through", "toward", "under", "until", "within", "without", "according", "actually", "advice", "affect", "afford", "agree", "allow", "although", "amount", "appear", "apply", "area", "arrive", "article", "attention", "avoid", "aware", "basic", "believe", "belong", "benefit", "bill", "borrow", "break", "business", "cancel", "career", "cause", "center", "certain", "change", "choice", "choose", "common", "compare", "complete", "condition", "consider", "continue", "control", "correct", "cost", "create", "culture", "customer", "daily", "decide", "decision", "deliver", "depend", "describe", "design", "develop", "die", "difference", "difficult", "direction", "discover", "discuss", "disease", "distance", "divide", "education", "effect", "effort", "either", "else", "empty", "energy", "enjoy", "enough", "enter"],
-          "B1": ["abandon", "ability", "abroad", "absence", "absorb", "abstract", "academic", "accept", "access", "accompany", "accomplish", "account", "accurate", "achieve", "acknowledge", "acquire", "adapt", "additional", "adequate", "adjust", "administration", "admire", "admit", "adopt", "advance", "advantage", "adventure", "advertise", "advocate", "alternative", "ambition", "analyze", "announce", "annual", "anticipate", "anxiety", "apologize", "apparent", "appeal", "appreciate", "approach", "appropriate", "approve", "argue", "arrangement", "assess", "assignment", "assist", "assume", "atmosphere", "attach", "attempt", "attitude", "attract", "authority", "available", "average", "avoid", "background", "balance", "barrier", "basis", "behavior", "belief", "blame", "board", "boundary", "branch", "budget", "candidate", "capable", "capacity", "capture", "category", "challenge", "circumstance", "claim", "clarify", "classic", "client", "climate", "colleague", "combine", "comfort", "command", "commit", "communicate", "community", "company", "complex", "concentrate", "concept", "concern", "conclude", "conduct", "confidence", "conflict", "confuse", "connect", "consequence"],
-          "B2": ["abolish", "abrupt", "absence", "absolute", "abstract", "accelerate", "accessible", "accommodate", "accumulate", "accusation", "adjacent", "advocate", "aesthetic", "albeit", "allocate", "alter", "ambiguous", "amend", "analogy", "anticipate", "arbitrary", "articulate", "aspire", "assert", "assess", "asset", "assign", "assumption", "assurance", "attain", "attribute", "authentic", "autonomous", "avenue", "bias", "coincide", "collaborate", "commence", "commission", "commodity", "compatible", "compensate", "compile", "complement", "comply", "component", "comprehensive", "comprise", "compromise", "conceive", "concurrent", "confer", "confine", "conform", "consensus", "consent", "consecutive", "constrain", "consult", "contemplate", "contradict", "controversial", "convene", "convey", "conviction", "coordinate", "corporate", "correspond", "criterion", "crucial", "cumulative", "curriculum", "cynical", "decade", "decisive", "dedicated", "deficiency", "depict", "deploy", "derive", "deteriorate", "devise", "dilemma", "diminish", "discrete", "displace", "dispose", "distinct", "distort", "diverse", "doctrine", "domestic", "dominant", "duration", "elaborate", "eligible", "eliminate", "elite", "embody", "empirical"],
-          "C1": ["aberration", "abhor", "abject", "abrogate", "abscond", "abstruse", "accolade", "accretion", "acumen", "adamant", "admonish", "adulterate", "aesthetic", "affinity", "alleviate", "aloof", "altruistic", "ambiguity", "ameliorate", "amenable", "anachronism", "analogous", "anomaly", "antagonize", "antipathy", "apathy", "appease", "apprehensive", "arbitrary", "ardent", "arduous", "articulate", "ascertain", "ascetic", "assiduous", "astute", "audacious", "augment", "austere", "autonomy", "aversion", "belittle", "benevolent", "benign", "bolster", "brevity", "cajole", "candid", "capricious", "catalyst", "caustic", "censure", "cerebral", "charisma", "circumvent", "clandestine", "coalesce", "coercion", "cogent", "coherent", "complacent", "concise", "concede", "condescending", "condone", "conducive", "conjecture", "connoisseur", "consensus", "contentious", "contrite", "convoluted", "copious", "corroborate", "credence", "cryptic", "culpable", "cursory", "cynical", "dearth", "debacle", "decorum", "deference", "delineate", "demur", "denounce", "deride", "desolate", "despondent", "deterrent", "detriment", "deviate", "dexterous", "dichotomy", "diffident", "digression", "diligent", "discern", "disparate", "disseminate"],
-          "C2": ["abstruse", "accede", "acrimony", "adumbrate", "alacrity", "anathema", "apocryphal", "approbation", "assiduity", "assuage", "attenuate", "avarice", "bellicose", "bombastic", "cacophony", "calumny", "capitulate", "castigate", "chicanery", "churlish", "circumlocution", "cogitation", "commensurate", "compunction", "confluence", "connivance", "consummate", "contumacious", "contravene", "convivial", "credulous", "cupidity", "debilitate", "decorous", "deleterious", "demagogue", "denouement", "desultory", "diatribe", "didactic", "diffidence", "dilatory", "disingenuous", "dissonance", "ebullient", "effervescent", "egregious", "elicit", "emollient", "encomium", "endemic", "enervate", "ephemeral", "epiphany", "equivocation", "erudition", "exacerbate", "excoriate", "exigency", "expatiate", "expeditious", "extol", "fallacious", "fastidious", "fecund", "felicitous", "fervid", "flagrant", "florid", "foment", "fortuitous", "fractious", "fulminate", "garrulous", "grandiloquent", "gratuitous", "harangue", "hegemony", "iconoclast", "immutable", "impecunious", "impertinent", "impetuous", "inchoate", "incipient", "inculcate", "indefatigable", "ineffable", "inexorable", "ingenuous", "inimical", "inscrutable", "insipid", "insolent", "intrepid", "invective", "invidious", "irascible", "laconic", "largesse"]
+          "A1": ["apple", "book", "cat", "dog", "water", "house", "school", "family", "time", "work", "friend", "food", "car", "city", "country", "door", "window", "table", "chair", "bed", "room", "phone", "money", "paper", "pen", "music", "game", "picture", "shirt", "shoe", "sun", "moon", "star", "rain", "snow", "wind", "fire", "tree", "flower", "bird", "fish", "horse", "cow", "pig", "sheep", "milk", "egg", "bread", "meat", "fruit", "hand", "foot", "head", "eye", "ear", "mouth", "nose", "hair", "face", "body", "day", "night", "week", "month", "year", "morning", "evening", "today", "tomorrow", "yesterday", "red", "blue", "green", "yellow", "black", "white", "brown", "orange", "pink", "purple", "boy", "girl", "man", "woman", "child", "baby", "brother", "sister", "mother", "father"],
+          "A2": ["achieve", "challenge", "benefit", "decide", "explain", "about", "above", "across", "after", "against", "along", "among", "around", "before", "behind", "below", "beside", "between", "beyond", "during", "inside", "outside", "near", "next", "onto", "over", "past", "through", "toward", "under", "until", "within", "without", "according", "actually", "advice", "affect", "afford", "agree", "allow", "although", "amount", "appear", "apply", "area", "arrive", "article", "attention", "avoid", "aware", "basic", "believe", "belong", "bill", "borrow", "break", "business", "cancel", "career", "cause", "center", "certain", "change", "choice", "choose", "common", "compare", "complete", "condition", "consider", "continue", "control", "correct", "cost", "create", "culture", "customer", "daily", "decision", "deliver", "depend", "describe", "design", "develop", "die", "difference", "difficult", "direction", "discover", "discuss", "disease", "distance", "divide", "education", "effect", "effort", "either", "else", "empty", "energy", "enjoy", "enough", "enter"],
+          "B1": ["recommend", "eager", "inspire", "opportunity", "essential", "abandon", "ability", "abroad", "absence", "absorb", "abstract", "academic", "accept", "access", "accompany", "accomplish", "account", "accurate", "acknowledge", "acquire", "adapt", "additional", "adequate", "adjust", "administration", "admire", "admit", "adopt", "advance", "advantage", "adventure", "advertise", "advocate", "alternative", "ambition", "analyze", "announce", "annual", "anticipate", "anxiety", "apologize", "apparent", "appeal", "appreciate", "approach", "appropriate", "approve", "argue", "arrangement", "assess", "assignment", "assist", "assume", "atmosphere", "attach", "attempt", "attitude", "attract", "authority", "available", "average", "background", "balance", "barrier", "basis", "behavior", "belief", "blame", "board", "boundary", "branch", "budget", "candidate", "capable", "capacity", "capture", "category", "circumstance", "claim", "clarify", "classic", "client", "climate", "colleague", "combine", "comfort", "command", "commit", "communicate", "community", "company", "complex", "concentrate", "concept", "concern", "conclude", "conduct", "confidence", "conflict", "confuse", "connect", "consequence"],
+          "B2": ["resilient", "abandon", "accurate", "determine", "consider", "abolish", "abrupt", "absolute", "accelerate", "accessible", "accommodate", "accumulate", "accusation", "adjacent", "advocate", "aesthetic", "albeit", "allocate", "alter", "ambiguous", "amend", "analogy", "anticipate", "arbitrary", "articulate", "aspire", "assert", "assess", "asset", "assign", "assumption", "assurance", "attain", "attribute", "authentic", "autonomous", "avenue", "bias", "coincide", "collaborate", "commence", "commission", "commodity", "compatible", "compensate", "compile", "complement", "comply", "component", "comprehensive", "comprise", "compromise", "conceive", "concurrent", "confer", "confine", "conform", "consensus", "consent", "consecutive", "constrain", "consult", "contemplate", "contradict", "controversial", "convene", "convey", "conviction", "coordinate", "corporate", "correspond", "criterion", "crucial", "cumulative", "curriculum", "cynical", "decade", "decisive", "dedicated", "deficiency", "depict", "deploy", "derive", "deteriorate", "devise", "dilemma", "diminish", "discrete", "displace", "dispose", "distinct", "distort", "diverse", "doctrine", "domestic", "dominant", "duration", "elaborate", "eligible", "eliminate", "elite", "embody", "empirical"],
+          "C1": ["persistent", "fundamental", "comprehensive", "ameliorate", "aberration", "abhor", "abject", "abrogate", "abscond", "abstruse", "accolade", "accretion", "acumen", "adamant", "admonish", "adulterate", "aesthetic", "affinity", "alleviate", "aloof", "altruistic", "ambiguity", "amenable", "anachronism", "analogous", "anomaly", "antagonize", "antipathy", "apathy", "appease", "apprehensive", "arbitrary", "ardent", "arduous", "articulate", "ascertain", "ascetic", "assiduous", "astute", "audacious", "augment", "austere", "autonomy", "aversion", "belittle", "benevolent", "benign", "bolster", "brevity", "cajole", "candid", "capricious", "catalyst", "caustic", "censure", "cerebral", "charisma", "circumvent", "clandestine", "coalesce", "coercion", "cogent", "coherent", "complacent", "concise", "concede", "condescending", "condone", "conducive", "conjecture", "connoisseur", "consensus", "contentious", "contrite", "convoluted", "copious", "corroborate", "credence", "cryptic", "culpable", "cursory", "cynical", "dearth", "debacle", "decorum", "deference", "delineate", "demur", "denounce", "deride", "desolate", "despondent", "deterrent", "detriment", "deviate", "dexterous", "dichotomy", "diffident", "digression", "diligent", "discern", "disparate", "disseminate"],
+          "C2": ["ubiquitous", "ephemeral", "paradigmatic", "abstruse", "accede", "acrimony", "adumbrate", "alacrity", "anathema", "apocryphal", "approbation", "assiduity", "assuage", "attenuate", "avarice", "bellicose", "bombastic", "cacophony", "calumny", "capitulate", "castigate", "chicanery", "churlish", "circumlocution", "cogitation", "commensurate", "compunction", "confluence", "connivance", "consummate", "contumacious", "contravene", "convivial", "credulous", "cupidity", "debilitate", "decorous", "deleterious", "demagogue", "denouement", "desultory", "diatribe", "didactic", "diffidence", "dilatory", "disingenuous", "dissonance", "ebullient", "effervescent", "egregious", "elicit", "emollient", "encomium", "endemic", "enervate", "epiphany", "equivocation", "erudition", "exacerbate", "excoriate", "exigency", "expatiate", "expeditious", "extol", "fallacious", "fastidious", "fecund", "felicitous", "fervid", "flagrant", "florid", "foment", "fortuitous", "fractious", "fulminate", "garrulous", "grandiloquent", "gratuitous", "harangue", "hegemony", "iconoclast", "immutable", "impecunious", "impertinent", "impetuous", "inchoate", "incipient", "inculcate", "indefatigable", "ineffable", "inexorable", "ingenuous", "inimical", "inscrutable", "insipid", "insolent", "intrepid", "invective", "invidious", "irascible", "laconic", "largesse"]
         };
         
-        const core1500Bank = Object.entries(levelWordLists).flatMap(([level, words]) =>
+        // Нийт үгсийн санг үүсгэх ба орчуулгын кэш санах ой (localStorage дээр хадгална)
+        let translationCache = JSON.parse(localStorage.getItem('vocab_translation_cache') || '{}');
+
+        let core1500Bank = Object.entries(levelWordLists).flatMap(([level, words]) =>
             words.map((word, i) => ({
                 id: `${level.toLowerCase()}_${i+1}`, word, level,
-                translation: ({apple:'Алим', book:'Ном', achieve:'Хүрэх, биелүүлэх', recommend:'Санал болгох, зөвлөх'})[word.toLowerCase()] || '',
+                translation: translationCache[word.toLowerCase()] || '',
                 mnemonic: '',
                 example: `I use the word "${word}" in everyday conversation.`
             }))
         );
 
-
         let currentUserSession = null;
-        let userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
+        let userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [], dailyAddCount: 5, lastDailyAddDate: '' };
         let activeDueWords = [];
         let currentIndex = 0;
-        let quizMode = 'en-mn';
-        let currentQuizQuestionText = '';
         let currentTargetQuizWord = null;
         let activeQuizWords = [];
         let examQuestions = [];
         let examCurrentIdx = 0;
         let examScoreCount = 0;
+
+        // Lazy rendering limit for bank modal performance
+        let bankVisibleCount = 40;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAuth();
@@ -533,7 +542,9 @@ INDEX_HTML = '''<!DOCTYPE html>
                 words: defaultWords,
                 streak: 1,
                 lastExamDate: Date.now(),
-                examHistory: []
+                examHistory: [],
+                dailyAddCount: 5,
+                lastDailyAddDate: ''
             };
 
             await supabaseClient.from('user_profiles').insert([
@@ -570,19 +581,62 @@ INDEX_HTML = '''<!DOCTYPE html>
 
             if (data) {
                 document.getElementById('currentUserDisplay').innerText = `${data.first_name} (${data.username})`;
-                userData = data.app_data || { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
+                userData = data.app_data || { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [], dailyAddCount: 5, lastDailyAddDate: '' };
             } else {
-                userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
+                userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [], dailyAddCount: 5, lastDailyAddDate: '' };
             }
 
+            if (userData.dailyAddCount === undefined) userData.dailyAddCount = 5;
+
+            // Өдөр бүр түвшин тус бүрээс автоматаар шинэ үг нэмэх логик
+            checkAndAddDailyWords();
+
             document.getElementById('streakCount').innerText = userData.streak || 1;
-            document.getElementById('dailyWordCount').value = userData.dailyWordCount || 5;
-            addDailyBankWords();
             checkExamRequirement();
             filterSRSWords();
             renderWordbook();
             renderExamHistory();
             initQuiz();
+        }
+
+        // Өдөр тутмын автомат үг нэмэх функц
+        function checkAndAddDailyWords() {
+            const todayStr = new Date().toDateString();
+            if (userData.lastDailyAddDate === todayStr) return; // Өнөөдөр аль хэдийн нэмэгдсэн
+
+            const countPerLevel = userData.dailyAddCount || 5;
+            const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+            let addedAny = false;
+
+            levels.forEach(lvl => {
+                const levelWords = core1500Bank.filter(b => b.level === lvl);
+                // Хэрэглэгчийн санд байхгүй үгсийг шүүх
+                const available = levelWords.filter(lw => !userData.words.some(uw => uw.word.toLowerCase() === lw.word.toLowerCase()));
+                // Санамсаргүйгээр сонгох
+                const shuffled = available.sort(() => 0.5 - Math.random());
+                const toAdd = shuffled.slice(0, countPerLevel);
+
+                toAdd.forEach(item => {
+                    userData.words.push({
+                        id: Date.now() + Math.random(),
+                        word: item.word,
+                        phonetic: `/${item.word.toLowerCase()}/`,
+                        translation: item.translation || 'Орчуулга',
+                        mnemonic: item.mnemonic || '',
+                        example: item.example,
+                        category: `CEFR ${item.level}`,
+                        srsLevel: 0,
+                        nextReviewDate: Date.now(),
+                        image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300'
+                    });
+                    addedAny = true;
+                });
+            });
+
+            if (addedAny) {
+                userData.lastDailyAddDate = todayStr;
+                saveUserData();
+            }
         }
 
         async function saveUserData() {
@@ -637,11 +691,9 @@ INDEX_HTML = '''<!DOCTYPE html>
                 w.srsLevel = Math.min((w.srsLevel || 0) + 1, SRS_INTERVALS.length - 1);
                 w.lastReviewedAt = Date.now();
                 w.nextReviewDate = Date.now() + (SRS_INTERVALS[w.srsLevel] * 24 * 60 * 60 * 1000);
-                w.reviewStatus = 'scheduled';
             } else {
                 w.srsLevel = 0;
                 w.nextReviewDate = Date.now() + 10 * 60 * 1000;
-                w.reviewStatus = 'again-soon';
             }
             saveUserData();
             filterSRSWords();
@@ -660,25 +712,6 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         function closeEditModal() {
             document.getElementById('editModal').classList.add('hidden');
-        }
-
-
-        async function translateBankWord(id) {
-            const item = core1500Bank.find(x => x.id === id);
-            if (!item) return;
-            try {
-                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.word)}&langpair=en|mn`);
-                if (!response.ok) throw new Error('Орчуулгын үйлчилгээ хариу өгсөнгүй');
-                const data = await response.json();
-                const translated = data?.responseData?.translatedText || '';
-                if (!translated || /MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translated)) {
-                    alert('Орчуулга олдсонгүй. “Засах” товчоор гараар оруулна уу.'); return;
-                }
-                item.translation = translated;
-                renderBankWords();
-            } catch (e) {
-                alert('Орчуулга татаж чадсангүй. Интернэтээ шалгана уу.');
-            }
         }
 
         function editBankWord(id) { openEditModal(id); }
@@ -703,6 +736,7 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         function openBankModal() {
             document.getElementById('bankModal').classList.remove('hidden');
+            bankVisibleCount = 40;
             renderBankWords();
         }
 
@@ -710,12 +744,36 @@ INDEX_HTML = '''<!DOCTYPE html>
             document.getElementById('bankModal').classList.add('hidden');
         }
 
-        function renderBankWords() {
+        function handleBankScroll() {
+            const container = document.getElementById('bankWordList');
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
+                bankVisibleCount += 30;
+                renderBankWords();
+            }
+        }
+
+        // Автоматаар орчуулж кэшлэх функц
+        async function fetchAndCacheTranslation(word) {
+            const lower = word.toLowerCase();
+            if (translationCache[lower]) return translationCache[lower];
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|mn`);
+                const data = await res.json();
+                const trans = data?.responseData?.translatedText || '';
+                if (trans && !/MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(trans)) {
+                    translationCache[lower] = trans;
+                    localStorage.setItem('vocab_translation_cache', JSON.stringify(translationCache));
+                    return trans;
+                }
+            } catch (e) {}
+            return '';
+        }
+
+        async function renderBankWords() {
             const query = document.getElementById('bankSearch').value.toLowerCase().trim();
             const level = document.getElementById('bankLevelFilter').value;
             const container = document.getElementById('bankWordList');
-            container.innerHTML = '';
-
+            
             const counts = Object.fromEntries(['A1','A2','B1','B2','C1','C2'].map(l => [l, core1500Bank.filter(b => b.level === l).length]));
             const allOption = document.querySelector('#bankLevelFilter option[value="ALL"]');
             if (allOption) allOption.textContent = `Бүх түвшин (${core1500Bank.length} үг)`;
@@ -723,13 +781,20 @@ INDEX_HTML = '''<!DOCTYPE html>
                 const opt = document.querySelector(`#bankLevelFilter option[value="${l}"]`);
                 if (opt) opt.textContent = `${l} (${counts[l]} үг)`;
             });
+
             const filtered = core1500Bank.filter(b => {
                 const matchQ = b.word.toLowerCase().includes(query) || b.translation.toLowerCase().includes(query);
                 const matchL = level === 'ALL' || b.level === level;
                 return matchQ && matchL;
             });
 
-            filtered.forEach(item => {
+            const currentSlice = filtered.slice(0, bankVisibleCount);
+            container.innerHTML = '';
+
+            for (const item of currentSlice) {
+                if (!item.translation) {
+                    item.translation = await fetchAndCacheTranslation(item.word);
+                }
                 const isAdded = userData.words.some(w => w.word.toLowerCase() === item.word.toLowerCase());
                 const div = document.createElement('div');
                 div.className = "p-3.5 flex items-center justify-between hover:bg-slate-50 transition border-b border-slate-100 last:border-none";
@@ -739,23 +804,30 @@ INDEX_HTML = '''<!DOCTYPE html>
                             <div class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
                                 ${item.word} <span class="text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-md font-bold">${item.level}</span>
                             </div>
-                            <div class="text-xs text-slate-500 font-medium">${item.translation || 'Орчуулга авахын тулд засварлах эсвэл үг нэмэх хэсгийн “Орчуулга” товчийг ашиглана уу'}</div>
+                            <div class="text-xs text-slate-500 font-medium">${item.translation || 'Орчуулга байхгүй'}</div>
                         </div>
                     </div>
-                    <div class="flex gap-2 items-center">${isAdded ? `<span class="text-emerald-600 font-bold text-xs">Нэмэгдсэн</span>` : `<button onclick="addFromBank('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Нэмэх</button>`}<button onclick="translateBankWord('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Орчуулах</button><button onclick="editBankWord('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Засах</button></div>
+                    <div class="flex gap-2 items-center">
+                        ${isAdded ? `<span class="text-emerald-600 font-bold text-xs">Нэмэгдсэн</span>` : `<button onclick="addFromBank('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Нэмэх</button>`}
+                        <button onclick="editBankWord('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Засах</button>
+                    </div>
                 `;
                 container.appendChild(div);
-            });
+            }
         }
 
         function addFromBank(bankId) {
             const bItem = core1500Bank.find(b => b.id === bankId);
             if (!bItem) return;
+            if (userData.words.some(w => w.word.toLowerCase() === bItem.word.toLowerCase())) {
+                alert('Энэ үг аль хэдийн таны санд байна.');
+                return;
+            }
             userData.words.push({
                 id: Date.now(),
                 word: bItem.word,
                 phonetic: `/${bItem.word.toLowerCase()}/`,
-                translation: bItem.translation || "Орчуулга авах шаардлагатай",
+                translation: bItem.translation || "Орчуулга",
                 mnemonic: '',
                 example: bItem.example,
                 category: `CEFR ${bItem.level}`,
@@ -768,38 +840,6 @@ INDEX_HTML = '''<!DOCTYPE html>
             renderWordbook();
         }
 
-        function setDailyWordCount(value) {
-            userData.dailyWordCount=Math.max(1,Math.min(20,parseInt(value,10)||5));
-            document.getElementById('dailyWordCount').value=userData.dailyWordCount;
-            userData.dailyAddedDates={};
-            saveUserData(); addDailyBankWords();
-        }
-        async function addDailyBankWords() {
-            if(!currentUserSession || !Array.isArray(userData.words)) return;
-            const today=new Date().toISOString().slice(0,10);
-            userData.dailyAddedDates=userData.dailyAddedDates||{};
-            if(userData.dailyAddedDates[today]) return;
-            const amount=Math.max(1,Math.min(20,Number(userData.dailyWordCount)||5));
-            const newlyAdded=[];
-            for(const level of ['A1','A2','B1','B2','C1','C2']) {
-                const available=core1500Bank.filter(b=>b.level===level && !userData.words.some(w=>w.word.toLowerCase()===b.word.toLowerCase()));
-                for(const item of available.slice(0,amount)) {
-                    let translation=item.translation||'';
-                    if(!translation) {
-                        try {
-                            const response=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.word)}&langpair=en|mn`);
-                            const data=await response.json(); translation=data?.responseData?.translatedText||'';
-                        } catch(e) {}
-                    }
-                    newlyAdded.push({id:Date.now()+newlyAdded.length,word:item.word,phonetic:`/${item.word}/`,
-                        translation:translation||'Орчуулга авах шаардлагатай',mnemonic:item.mnemonic||'',
-                        example:item.example||`I use ${item.word} in everyday conversation.`,category:`CEFR ${level}`,
-                        srsLevel:0,nextReviewDate:Date.now(),image:''});
-                }
-            }
-            userData.words.push(...newlyAdded); userData.dailyAddedDates[today]=true;
-            await saveUserData(); renderWordbook(); filterSRSWords();
-        }
         function switchTab(tab) {
             if ((tab === 'flashcards' || tab === 'quiz') && checkExamRequirement()) {
                 alert('Та эхний 30 үгээ цээжилж дуусгасан тул 3 хоног тутамд заавал ШАЛГАЛТ өгөх дүрэм идэвхжлээ!');
@@ -823,7 +863,7 @@ INDEX_HTML = '''<!DOCTYPE html>
         function renderFlashcard() {
             if (!activeDueWords || activeDueWords.length === 0) {
                 document.getElementById('cardWord').innerText = "Давтах үг алга";
-                document.getElementById('cardTranslation').innerText = "Дараагийн давталтын цаг болоогүй байна. Нийт үгсийн сангаас үг нэмэх эсвэл дараа дахин орно уу.";
+                document.getElementById('cardTranslation').innerText = "Дараагийн давталтын цаг болоогүй байна. Нийт үгсийн сангаас үг нэмнэ үү.";
                 return;
             }
             const w = activeDueWords[currentIndex];
@@ -833,7 +873,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             document.getElementById('cardMnemonic').innerText = '💡 ' + (w.mnemonic || 'Түлхүүр санамж байхгүй');
             document.getElementById('cardExample').innerText = w.example || 'Example sentence.';
             document.getElementById('cardImage').src = w.image || 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300';
-            document.getElementById('cardIntervalTag').innerText = `SRS: Day ${SRS_INTERVALS[w.srsLevel || 0]}`;
+            document.getElementById('cardIntervalTag').innerText = `SRS Level: ${w.srsLevel || 0}`;
             document.getElementById('flashcard').classList.remove('rotate-y-180');
         }
 
@@ -865,16 +905,8 @@ INDEX_HTML = '''<!DOCTYPE html>
             const btn = document.getElementById('autoBtn');
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Орчуулж байна...';
             try {
-                const local = core1500Bank.find(x => x.word.toLowerCase() === wordInput && x.translation);
-                let translation = local?.translation || '';
-                if (!translation) {
-                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(wordInput)}&langpair=en|mn`;
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error('Орчуулгын үйлчилгээ хариу өгсөнгүй');
-                    const data = await response.json();
-                    translation = data?.responseData?.translatedText || '';
-                    if (/MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translation)) translation = '';
-                }
+                let translation = await fetchAndCacheTranslation(wordInput);
+                if (!translation) translation = `${wordInput} орчуулга`;
                 document.getElementById('newTranslation').value = translation;
                 try {
                     const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordInput)}`);
@@ -885,27 +917,29 @@ INDEX_HTML = '''<!DOCTYPE html>
                 } catch (_) {
                     document.getElementById('newExample').value = `I often use "${wordInput}" when I speak English.`;
                 }
-                if (!translation) alert('Орчуулга автоматаар олдсонгүй. Орчуулгын талбарыг гараар бөглөнө үү.');
             } catch (err) {
-                alert('Онлайн орчуулга амжилтгүй боллоо. Интернэтээ шалгаад дахин оролдоно уу. ' + err.message);
+                document.getElementById('newTranslation').value = `${wordInput} орчуулга`;
                 document.getElementById('newExample').value = `I often use "${wordInput}" when I speak English.`;
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Орчуулга';
             }
         }
 
+        // Шинэ үг нэмэх үед Хэрэглэгчийн санд БОЛОН Нийт үгсийн санд (core1500Bank) давхар нэмэх
         function addNewWord() {
             const word = escapeHTML(document.getElementById('newWord').value.trim());
             const translation = escapeHTML(document.getElementById('newTranslation').value.trim());
             const mnemonic = escapeHTML(document.getElementById('newMnemonic').value.trim());
             const example = escapeHTML(document.getElementById('newExample').value.trim());
+            const level = document.getElementById('newWordLevel').value;
 
             if (!word || !translation) { alert('Үг болон орчуулгыг заавал бичнэ үү!'); return; }
             if (userData.words.some(w => w.word.toLowerCase() === word.toLowerCase())) {
-                alert('⚠️ Энэ үг аль хэдийнэ нэмэгдсэн байна!');
+                alert('⚠️ Энэ үг аль хэдийнэ таны санд байна!');
                 return;
             }
 
+            // 1. Хэрэглэгчийн санд нэмэх
             userData.words.push({
                 id: Date.now(),
                 word: word,
@@ -913,28 +947,37 @@ INDEX_HTML = '''<!DOCTYPE html>
                 translation: translation,
                 mnemonic: mnemonic,
                 example: example || `Example sentence for ${word}.`,
-                category: 'Хэрэглэгчийн үг',
+                category: `CEFR ${level}`,
                 srsLevel: 0,
                 nextReviewDate: Date.now(),
                 image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300'
             });
 
+            // 2. Нийт үгсийн санд (core1500Bank) давхар нэмэх
             if (!core1500Bank.some(b => b.word.toLowerCase() === word.toLowerCase())) {
-                core1500Bank.push({ id: `custom_${Date.now()}`, word, level: 'USER', translation, mnemonic, example: example || `Example sentence for ${word}.` });
+                core1500Bank.push({
+                    id: `custom_${Date.now()}`,
+                    word: word,
+                    level: level,
+                    translation: translation,
+                    mnemonic: mnemonic,
+                    example: example || `Example sentence for ${word}.`
+                });
             }
+
             saveUserData();
             document.getElementById('newWord').value = '';
             document.getElementById('newTranslation').value = '';
             document.getElementById('newMnemonic').value = '';
             document.getElementById('newExample').value = '';
-            alert('✨ Шинэ үг амжилттай нэмэгдлээ!');
+            alert('✨ Шинэ үг амжилттай нэмэгдэж нийт санд бүртгэгдлээ!');
             switchTab('wordbook');
         }
 
-        function setQuizMode(mode) {
-            quizMode = mode;
-            initQuiz();
-        }
+        // --- Сорилт: Үсгүүдийг зөв дарааллаар сонгож угсрах логик ---
+        let currentBuilderWord = null;
+        let selectedLettersIndices = [];
+        let shuffledLetters = [];
 
         function initQuiz() {
             activeQuizWords = [...userData.words];
@@ -943,69 +986,6 @@ INDEX_HTML = '''<!DOCTYPE html>
             nextQuizQuestion();
         }
 
-        let sentenceQuizState = { answer: '', picked: [], solved: false };
-        function renderSentenceQuiz(w) {
-            document.getElementById('quizSentence').classList.remove('hidden');
-            document.getElementById('quizOptions').classList.add('hidden');
-            const answer = String(w.word || '').trim();
-            const example = String(w.example || `I use ${answer} every day.`);
-            const escaped = answer.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const rgx = new RegExp('\\\\b' + escaped + '\\\\b', 'i');
-            document.getElementById('quizSentenceText').textContent =
-                rgx.test(example) ? example.replace(rgx, '________') : `Complete: ________ (${w.translation || answer})`;
-            sentenceQuizState = { answer, picked: [], solved: false };
-            const slots = document.getElementById('quizAnswerSlots');
-            const tiles = document.getElementById('quizLetterTiles');
-            slots.innerHTML = ''; tiles.innerHTML = '';
-            [...answer].forEach((letter, i) => {
-                const slot = document.createElement('button');
-                slot.type = 'button'; slot.className = 'min-w-8 h-10 px-2 border-b-2 border-indigo-400 font-black text-lg';
-                slot.textContent = i === 0 ? letter : '＿';
-                if (i > 0) slot.onclick = () => removeSentenceLetter();
-                else slot.disabled = true;
-                slots.appendChild(slot);
-            });
-            [...answer.slice(1)].map((letter, i) => ({letter, id:i})).sort(() => Math.random()-.5).forEach((x,i) => {
-                const b = document.createElement('button');
-                b.type='button'; b.dataset.letter=x.letter; b.className='w-10 h-10 rounded-xl border bg-white font-bold';
-                b.textContent=x.letter; b.onclick=()=>pickSentenceLetter(b); tiles.appendChild(b);
-            });
-            document.getElementById('quizTypingFeedback').textContent='';
-            const next=document.getElementById('quizNextSentence'); next.disabled=true; next.textContent='Шалгах';
-        }
-        function pickSentenceLetter(tile) {
-            if (sentenceQuizState.solved || tile.disabled) return;
-            sentenceQuizState.picked.push({letter:tile.dataset.letter,tile});
-            tile.disabled=true; tile.classList.add('opacity-30');
-            paintSentenceSlots();
-            const typed=sentenceQuizState.answer[0]+sentenceQuizState.picked.map(x=>x.letter).join('');
-            if (typed.length===sentenceQuizState.answer.length) {
-                const feedback=document.getElementById('quizTypingFeedback');
-                if (typed.toLowerCase()===sentenceQuizState.answer.toLowerCase()) {
-                    sentenceQuizState.solved=true; feedback.textContent='Зөв бичлээ!';
-                    feedback.className='text-sm font-bold text-emerald-600';
-                    const next=document.getElementById('quizNextSentence'); next.disabled=false; next.textContent='Дараах';
-                } else {
-                    feedback.textContent='Буруу байна. Сонгосон үсгийг арилгаад дахин оролдоорой.';
-                    feedback.className='text-sm font-bold text-rose-600';
-                }
-            }
-        }
-        function paintSentenceSlots() {
-            [...document.getElementById('quizAnswerSlots').children].forEach((slot,i) => {
-                slot.textContent=i===0 ? sentenceQuizState.answer[0] : (sentenceQuizState.picked[i-1]?.letter || '＿');
-            });
-        }
-        function removeSentenceLetter() {
-            if(sentenceQuizState.solved || !sentenceQuizState.picked.length) return;
-            const item=sentenceQuizState.picked.pop(); item.tile.disabled=false; item.tile.classList.remove('opacity-30');
-            paintSentenceSlots(); document.getElementById('quizTypingFeedback').textContent='';
-        }
-        function submitSentenceAnswer() {
-            if(!sentenceQuizState.solved) return;
-            activeQuizWords=activeQuizWords.filter(w=>w.id!==currentTargetQuizWord.id);
-            nextQuizQuestion();
-        }
         function resetQuiz() { initQuiz(); }
 
         function nextQuizQuestion() {
@@ -1015,40 +995,101 @@ INDEX_HTML = '''<!DOCTYPE html>
                 return;
             }
             currentTargetQuizWord = activeQuizWords[Math.floor(Math.random() * activeQuizWords.length)];
-            if (quizMode === 'mn-en') {
-                renderSentenceQuiz(currentTargetQuizWord);
-                return;
-            }
-            document.getElementById('quizSentence').classList.add('hidden');
-            const optsContainer = document.getElementById('quizOptions');
-            optsContainer.classList.remove('hidden');
+            
+            document.getElementById('quizQuestionMeaning').innerText = currentTargetQuizWord.translation;
+            document.getElementById('quizQuestionExample').innerText = currentTargetQuizWord.example ? `"${currentTargetQuizWord.example}"` : '';
 
-            let options = [currentTargetQuizWord];
-            while (options.length < Math.min(4, userData.words.length)) {
-                const rw = userData.words[Math.floor(Math.random() * userData.words.length)];
-                if (!options.some(o => o.id === rw.id)) options.push(rw);
-            }
-            options.sort(() => Math.random() - 0.5);
+            const word = currentTargetQuizWord.word.toLowerCase();
+            const firstLetter = word[0];
+            const restLetters = word.slice(1).split('');
+            
+            // Үсгүүдийг холих
+            shuffledLetters = restLetters.sort(() => Math.random() - 0.5);
+            selectedLettersIndices = [];
 
-            document.getElementById('quizQuestion').innerText = currentTargetQuizWord.word;
-            optsContainer.innerHTML = '';
-            options.forEach(opt => {
+            renderWordBuilder();
+        }
+
+        function renderWordBuilder() {
+            const word = currentTargetQuizWord.word.toLowerCase();
+            const firstLetter = word[0];
+            const slotsContainer = document.getElementById('wordBuilderSlots');
+            slotsContainer.innerHTML = '';
+
+            // 1. Эхний үсэг автоматаар бөглөгдсөн байна
+            const firstSlot = document.createElement('div');
+            firstSlot.className = "w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow";
+            firstSlot.innerText = firstLetter.toUpperCase();
+            slotsContainer.appendChild(firstSlot);
+
+            // 2. Үлдсэн слот нүднүүд
+            for (let i = 1; i < word.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = "w-10 h-10 rounded-xl border-2 border-dashed border-indigo-300 bg-white text-indigo-800 font-bold flex items-center justify-center text-lg shadow-inner";
+                
+                // Хэрэглэгчийн дарсан үсэг байгаа эсэх
+                const chosenIdx = selectedLettersIndices[i - 1];
+                if (chosenIdx !== undefined) {
+                    slot.innerText = shuffledLetters[chosenIdx].toUpperCase();
+                    slot.classList.remove('border-dashed', 'border-indigo-300');
+                    slot.classList.add('border-solid', 'border-indigo-600', 'bg-indigo-50');
+                    slot.onclick = () => {
+                        selectedLettersIndices[i - 1] = undefined;
+                        renderWordBuilder();
+                    };
+                } else {
+                    slot.innerText = '';
+                }
+                slotsContainer.appendChild(slot);
+            }
+
+            // 3. Үсгийн самбар (Letter Pool)
+            const poolContainer = document.getElementById('letterPool');
+            poolContainer.innerHTML = '';
+            shuffledLetters.forEach((char, idx) => {
+                const isUsed = selectedLettersIndices.includes(idx);
                 const btn = document.createElement('button');
-                btn.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition flex items-center justify-between";
-                btn.innerHTML = `<span>${opt.translation}</span>`;
+                btn.className = `w-10 h-10 rounded-xl font-bold text-base transition shadow ${isUsed ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50'}`;
+                btn.innerText = char.toUpperCase();
+                btn.disabled = isUsed;
                 btn.onclick = () => {
-                    if (opt.id === currentTargetQuizWord.id) {
-                        btn.className = "p-4 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700 font-bold flex items-center justify-between";
-                        setTimeout(() => {
-                            activeQuizWords = activeQuizWords.filter(w => w.id !== currentTargetQuizWord.id);
-                            nextQuizQuestion();
-                        }, 500);
-                    } else {
-                        btn.className = "p-4 rounded-xl border border-rose-500 bg-rose-50 text-rose-700 font-bold flex items-center justify-between";
+                    if (!isUsed) {
+                        const firstEmpty = selectedLettersIndices.findIndex(val => val === undefined);
+                        if (firstEmpty !== -1 && firstEmpty < word.length - 1) {
+                            selectedLettersIndices[firstEmpty] = idx;
+                        } else if (selectedLettersIndices.length < word.length - 1) {
+                            selectedLettersIndices.push(idx);
+                        }
+                        renderWordBuilder();
                     }
                 };
-                optsContainer.appendChild(btn);
+                poolContainer.appendChild(btn);
             });
+        }
+
+        function resetLetterBuilder() {
+            selectedLettersIndices = [];
+            renderWordBuilder();
+        }
+
+        function checkLetterBuilder() {
+            const word = currentTargetQuizWord.word.toLowerCase();
+            let built = word[0];
+            for (let i = 0; i < word.length - 1; i++) {
+                const idx = selectedLettersIndices[i];
+                if (idx !== undefined) {
+                    built += shuffledLetters[idx];
+                }
+            }
+
+            if (built === word) {
+                alert('✨ Зөв байна!');
+                activeQuizWords = activeQuizWords.filter(w => w.id !== currentTargetQuizWord.id);
+                setTimeout(nextQuizQuestion, 300);
+            } else {
+                alert('❌ Буруу байна. Дахин оролдоно уу!');
+                resetLetterBuilder();
+            }
         }
 
         function startNewExam() {
