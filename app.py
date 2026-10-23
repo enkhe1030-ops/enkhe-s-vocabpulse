@@ -15,11 +15,10 @@ INDEX_HTML = '''<!DOCTYPE html>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Supabase JS SDK (UMD stable version for browser) -->
+    <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
 
     <style>
@@ -294,7 +293,6 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold gap-1 flex-wrap justify-center">
                         <button onclick="setQuizMode('en-mn')" id="quizModeEnMn" class="px-3 py-1.5 rounded-lg bg-white text-indigo-600 shadow-sm">Англи ➔ Монгол</button>
                         <button onclick="setQuizMode('mn-en')" id="quizModeMnEn" class="px-3 py-1.5 rounded-lg text-slate-500">Монгол ➔ Англи</button>
-                        <button onclick="setQuizMode('fill-blank')" id="quizModeFillBlank" class="px-3 py-1.5 rounded-lg text-slate-500">Өгүүлбэр нөхөх</button>
                     </div>
                 </div>
 
@@ -308,16 +306,6 @@ INDEX_HTML = '''<!DOCTYPE html>
                     </div>
 
                     <div id="quizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-
-                    <div id="quizTileContainer" class="hidden flex flex-col gap-4 items-center">
-                        <div class="flex items-center gap-2">
-                            <span id="constructedWordDisplay" class="text-2xl font-black text-indigo-600 tracking-widest bg-indigo-50 px-6 py-2 rounded-xl border border-indigo-200 min-w-[150px] text-center">--</span>
-                            <button onclick="resetTiles()" class="p-2 text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-arrow-rotate-left"></i> Арилгах</button>
-                        </div>
-                        <div id="tileButtons" class="flex flex-wrap gap-2 justify-center max-w-sm"></div>
-                        <button onclick="checkTileAnswer()" class="w-full max-w-xs py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition mt-2">Шалгах</button>
-                        <div id="tileFeedback" class="text-center font-bold text-sm hidden"></div>
-                    </div>
                 </div>
 
                 <div id="quizCompleted" class="hidden text-center py-10 flex flex-col items-center gap-4">
@@ -470,7 +458,7 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         async function checkAuth() {
             if (!supabaseClient) {
-                alert("Supabase холболт амжилтгүй боллоо. URL болон Key шалгана уу.");
+                console.error("Supabase client not initialized.");
                 return;
             }
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -841,7 +829,6 @@ INDEX_HTML = '''<!DOCTYPE html>
             currentTargetQuizWord = activeQuizWords[Math.floor(Math.random() * activeQuizWords.length)];
             const optsContainer = document.getElementById('quizOptions');
             optsContainer.classList.remove('hidden');
-            document.getElementById('quizTileContainer').classList.add('hidden');
 
             let options = [currentTargetQuizWord];
             while (options.length < Math.min(4, userData.words.length)) {
@@ -899,7 +886,6 @@ INDEX_HTML = '''<!DOCTYPE html>
 
             const grid = document.getElementById('examOptionsGrid');
             grid.innerHTML = '';
-            opts.optsContainer?.innerHTML = '';
             opts.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition";
