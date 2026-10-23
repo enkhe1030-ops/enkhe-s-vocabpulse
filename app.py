@@ -412,8 +412,8 @@ INDEX_HTML = '''<!DOCTYPE html>
 
     <script>
         // Supabase Тохиргоо (Өөрийн Supabase Project URL болон Anon Key-г энд оруулна уу)
-        const SUPABASE_URL = 'https://энд_өөрийн_project_url_оруулна.supabase.co';
-        const SUPABASE_ANON_KEY = 'энд_өөрийн_anon_key_оруулна';
+        const SUPABASE_URL = 'https://aopbyjndymjfkvkbxsui.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0';
         
         let supabaseClient = null;
         try {
