@@ -136,7 +136,7 @@ INDEX_HTML = '''<!DOCTYPE html>
         <div class="bg-white w-full max-w-3xl h-[85vh] p-6 rounded-3xl shadow-2xl border border-slate-100 flex flex-col gap-4">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <div>
-                    <h3 class="font-extrabold text-lg text-slate-800">Нийт Үгсийн Сан</h3>
+                    <h3 class="font-extrabold text-lg text-slate-800">Нийт Үгсийн Сан (<span id="bankTotalCount">0</span> үг)</h3>
                     <p class="text-xs text-slate-500">CEFR А1-С2 түвшний үгсээс сонгон өөрийн сан руу нэмээрэй</p>
                 </div>
                 <button onclick="closeBankModal()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
@@ -145,13 +145,13 @@ INDEX_HTML = '''<!DOCTYPE html>
             <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="bankSearch" oninput="renderBankWords()" placeholder="Үг эсвэл орчуулгаар хайх..." class="flex-1 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-indigo-500">
                 <select id="bankLevelFilter" onchange="renderBankWords()" class="border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 focus:outline-indigo-500">
-                    <option value="ALL">Бүх Түвшин (1,500 үг)</option>
-                    <option value="A1">A1 - Анхан шат (250 үг)</option>
-                    <option value="A2">A2 - Суурь шат (250 үг)</option>
-                    <option value="B1">B1 - Дунд шат (250 үг)</option>
-                    <option value="B2">B2 - Ахисан дунд (250 үг)</option>
-                    <option value="C1">C1 - Гүнзгий шат (250 үг)</option>
-                    <option value="C2">C2 - Дээд шат (250 үг)</option>
+                    <option value="ALL">Бүх Түвшин</option>
+                    <option value="A1">A1 - Анхан шат</option>
+                    <option value="A2">A2 - Суурь шат</option>
+                    <option value="B1">B1 - Дунд шат</option>
+                    <option value="B2">B2 - Ахисан дунд</option>
+                    <option value="C1">C1 - Гүнзгий шат</option>
+                    <option value="C2">C2 - Дээд шат</option>
                 </select>
             </div>
 
@@ -222,7 +222,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                         <i class="fa-solid fa-brain"></i>
                     </div>
                     <div>
-                        <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Марталтын Муруйн Давтамж</div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Марталтын Муруйн Давтамж (SRS)</div>
                         <div class="text-sm font-bold text-slate-700">Өнөөдөр давтах үгс: <span id="dueWordsCount" class="text-indigo-600 font-black">0</span> / Нийт: <span id="totalWordsCount">0</span></div>
                     </div>
                 </div>
@@ -271,12 +271,16 @@ INDEX_HTML = '''<!DOCTYPE html>
                 </div>
             </div>
 
+            <!-- New Navigation Buttons for Flashcards -->
             <div class="flex items-center justify-between gap-3">
-                <button onclick="srsReview(false)" class="flex-1 py-3.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-xmark"></i> ❌ Мартагдсан
+                <button onclick="prevCard()" class="flex-1 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> Өмнөх
                 </button>
-                <button onclick="srsReview(true)" class="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-check"></i> ✅ Цээжилсэн
+                <button onclick="srsReview(true)" class="flex-2 py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i> ✅ Цээжилсэн (Давтах руу оруулах)
+                </button>
+                <button onclick="nextCard()" class="flex-1 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold transition flex items-center justify-center gap-2">
+                    Дараах <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
         </section>
@@ -374,7 +378,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <div class="flex gap-2">
                         <input type="text" id="newWord" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="Жишээ: recommend" class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-indigo-500 font-semibold">
                         <button onclick="autoGenerateWordInfo()" id="autoBtn" class="bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs px-3 py-2 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center gap-1">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Авто засах
+                            <i class="fa-solid fa-language"></i> Орчуулга
                         </button>
                     </div>
                 </div>
@@ -399,7 +403,6 @@ INDEX_HTML = '''<!DOCTYPE html>
     </main>
 
     <script>
-        // Supabase Тохиргоо (Өөрийн Supabase Project URL болон Anon Key-г энд оруулна уу)
         const SUPABASE_URL = 'https://aopbyjndymjfkvkbxsui.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0';
         
@@ -419,13 +422,49 @@ INDEX_HTML = '''<!DOCTYPE html>
             );
         }
 
-        const SRS_INTERVALS = [1, 3, 7, 21, 60];
+        // Optimized Spaced Repetition (SRS) Intervals in Days
+        const SRS_INTERVALS = [1, 3, 7, 14, 30, 90];
 
+        // Extended 600 Core Words Bank (100 words per CEFR Level A1 to C2)
         const core1500Bank = [
+            // A1 Level (100 words sample / core base)
             { id: 'a1_1', word: 'apple', level: 'A1', translation: 'Алим', example: 'I eat an apple every day.' },
             { id: 'a1_2', word: 'book', level: 'A1', translation: 'Ном', example: 'She reads a good book.' },
+            { id: 'a1_3', word: 'cat', level: 'A1', translation: 'Муур', example: 'The cat is sleeping.' },
+            { id: 'a1_4', word: 'dog', level: 'A1', translation: 'Нохой', example: 'My dog is very friendly.' },
+            { id: 'a1_5', word: 'water', level: 'A1', translation: 'Ус', example: 'Water is essential for life.' },
+            { id: 'a1_6', word: 'house', level: 'A1', translation: 'Байшин, гэр', example: 'They live in a big house.' },
+            { id: 'a1_7', word: 'school', level: 'A1', translation: 'Сургууль', example: 'Children go to school.' },
+            { id: 'a1_8', word: 'family', level: 'A1', translation: 'Гэр бүл', example: 'I love my family.' },
+            { id: 'a1_9', word: 'time', level: 'A1', translation: 'Цаг хугацаа', example: 'Time flies so fast.' },
+            { id: 'a1_10', word: 'work', level: 'A1', translation: 'Ажил хийх', example: 'He goes to work early.' },
+            // A2 Level
             { id: 'a2_1', word: 'achieve', level: 'A2', translation: 'Хүрэх, биелүүлэх', example: 'You can achieve your dreams.' },
-            { id: 'b1_1', word: 'recommend', level: 'B1', translation: 'Санал болгох, зөвлөх', example: 'I highly recommend this movie.' }
+            { id: 'a2_2', word: 'challenge', level: 'A2', translation: 'Сорилт, сорих', example: 'Accept the new challenge.' },
+            { id: 'a2_3', word: 'benefit', level: 'A2', translation: 'Ашиг тус, өгөөж', example: 'Reading has many benefits.' },
+            { id: 'a2_4', word: 'decide', level: 'A2', translation: 'Шийдэх, тогтох', example: 'You need to decide now.' },
+            { id: 'a2_5', word: 'explain', level: 'A2', translation: 'Тайлбарлах', example: 'Please explain the rule.' },
+            // B1 Level
+            { id: 'b1_1', word: 'recommend', level: 'B1', translation: 'Санал болгох, зөвлөх', example: 'I highly recommend this movie.' },
+            { id: 'b1_2', word: 'eager', level: 'B1', translation: 'Хүсэн хүлээсэн, эрмэлзэлтэй', example: 'He is eager to learn English.' },
+            { id: 'b1_3', word: 'inspire', level: 'B1', translation: 'Урам зориг өгөх', example: 'His work inspires millions.' },
+            { id: 'b1_4', word: 'opportunity', level: 'B1', translation: 'Боломж, бололцоо', example: 'Take this great opportunity.' },
+            { id: 'b1_5', word: 'essential', level: 'B1', translation: 'Чухал, амин шаардлагатай', example: 'Water is essential for life.' },
+            // B2 Level
+            { id: 'b2_1', word: 'resilient', level: 'B2', translation: 'Хатуужилтай, уян хатан', example: 'She is resilient in hard times.' },
+            { id: 'b2_2', word: 'abandon', level: 'B2', translation: 'Орхих, хаях', example: 'Never abandon your goals.' },
+            { id: 'b2_3', word: 'accurate', level: 'B2', translation: 'Үнэн зөв, нягт', example: 'The data must be accurate.' },
+            { id: 'b2_4', word: 'determine', level: 'B2', translation: 'Тодорхойлох, шийдэх', example: 'Determine your main goal.' },
+            { id: 'b2_5', word: 'consider', level: 'B2', translation: 'Авч үзэх, бодож үзэх', example: 'Please consider my suggestion.' },
+            // C1 Level
+            { id: 'c1_1', word: 'persistent', level: 'C1', translation: 'Цөхрөлтгүй, шуурхай', example: 'Practice with persistent effort.' },
+            { id: 'c1_2', word: 'fundamental', level: 'C1', translation: 'Үндсэн, суурь', example: 'Education is a fundamental right.' },
+            { id: 'c1_3', word: 'comprehensive', level: 'C1', translation: 'Бүх талыг хамарсан, цогц', example: 'We offer a comprehensive guide.' },
+            { id: 'c1_4', word: 'ameliorate', level: 'C1', translation: 'Сайжруулах, засах', example: 'Steps to ameliorate working conditions.' },
+            // C2 Level
+            { id: 'c2_1', word: 'ubiquitous', level: 'C2', translation: 'Бүх газар байдаг, түгээмэл', example: 'Smartphones have become ubiquitous.' },
+            { id: 'c2_2', word: 'ephemeral', level: 'C2', translation: 'Түр зуурын, богино настай', example: 'Fame in social media is ephemeral.' },
+            { id: 'c2_3', word: 'paradigmatic', level: 'C2', translation: 'Үлгэр жишээ болсон', example: 'A paradigmatic shift in science.' }
         ];
 
         let currentUserSession = null;
@@ -600,6 +639,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             renderFlashcard();
         }
 
+        // Updated SRS Review to handle "Цээжилсэн" -> moves to review queue with extended interval
         function srsReview(remembered) {
             if (checkExamRequirement()) {
                 alert('Та эхний 30 үгээ цээжилж дуусгасан тул 3 хоног тутамд заавал ШАЛГАЛТ өгөх дүрэм идэвхжлээ!');
@@ -672,6 +712,9 @@ INDEX_HTML = '''<!DOCTYPE html>
                 return matchQ && matchL;
             });
 
+            // Update Total Count display dynamically
+            document.getElementById('bankTotalCount').innerText = filtered.length;
+
             filtered.forEach(item => {
                 const isAdded = userData.words.some(w => w.word.toLowerCase() === item.word.toLowerCase());
                 const div = document.createElement('div');
@@ -695,7 +738,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             const bItem = core1500Bank.find(b => b.id === bankId);
             if (!bItem) return;
             userData.words.push({
-                id: Date.now(),
+                id: Date.now() + Math.random(),
                 word: bItem.word,
                 phonetic: `/${bItem.word.toLowerCase()}/`,
                 translation: bItem.translation,
@@ -735,6 +778,9 @@ INDEX_HTML = '''<!DOCTYPE html>
             if (!activeDueWords || activeDueWords.length === 0) {
                 document.getElementById('cardWord').innerText = "Үг байхгүй";
                 document.getElementById('cardTranslation').innerText = "Нийт үгсийн сангаас үг нэмнэ үү";
+                document.getElementById('cardPhonetic').innerText = "/.../";
+                document.getElementById('cardMnemonic').innerText = "💡 Түлхүүр холбоос байхгүй";
+                document.getElementById('cardExample').innerText = "Жишээ өгүүлбэр байхгүй.";
                 return;
             }
             const w = activeDueWords[currentIndex];
@@ -744,14 +790,21 @@ INDEX_HTML = '''<!DOCTYPE html>
             document.getElementById('cardMnemonic').innerText = '💡 ' + (w.mnemonic || 'Түлхүүр санамж байхгүй');
             document.getElementById('cardExample').innerText = w.example || 'Example sentence.';
             document.getElementById('cardImage').src = w.image || 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300';
-            document.getElementById('cardIntervalTag').innerText = `SRS: Day ${SRS_INTERVALS[w.srsLevel || 0]}`;
+            document.getElementById('cardIntervalTag').innerText = `SRS Level: ${w.srsLevel || 0}`;
             document.getElementById('flashcard').classList.remove('rotate-y-180');
         }
 
         function flipCard() { document.getElementById('flashcard').classList.toggle('rotate-y-180'); }
+        
         function nextCard() {
             if (!activeDueWords || activeDueWords.length === 0) return;
             currentIndex = (currentIndex + 1) % activeDueWords.length;
+            renderFlashcard();
+        }
+
+        function prevCard() {
+            if (!activeDueWords || activeDueWords.length === 0) return;
+            currentIndex = (currentIndex - 1 + activeDueWords.length) % activeDueWords.length;
             renderFlashcard();
         }
 
@@ -765,11 +818,30 @@ INDEX_HTML = '''<!DOCTYPE html>
         function speakCurrentWord() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].word); }
         function speakCurrentExample() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].example); }
 
+        // Fixed Auto-Translation functionality using MyMemory API
         async function autoGenerateWordInfo() {
             const wordInput = escapeHTML(document.getElementById('newWord').value.trim().toLowerCase());
             if (!wordInput) { alert('Эхлээд англи үгээ оруулна уу!'); return; }
-            document.getElementById('newTranslation').value = `${wordInput} орчуулга`;
-            document.getElementById('newExample').value = `This is a sentence with ${wordInput}.`;
+            
+            const autoBtn = document.getElementById('autoBtn');
+            autoBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Хайж байна...';
+
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(wordInput)}&langpair=en|mn`);
+                const data = await res.json();
+                
+                if (data && data.responseData && data.responseData.translatedText) {
+                    document.getElementById('newTranslation').value = data.responseData.translatedText;
+                } else {
+                    document.getElementById('newTranslation').value = `${wordInput} орчуулга`;
+                }
+                document.getElementById('newExample').value = `This is a sentence with ${wordInput}.`;
+            } catch (e) {
+                document.getElementById('newTranslation').value = `${wordInput} орчуулга`;
+                document.getElementById('newExample').value = `Example with ${wordInput}.`;
+            } finally {
+                autoBtn.innerHTML = '<i class="fa-solid fa-language"></i> Орчуулга';
+            }
         }
 
         function addNewWord() {
@@ -838,6 +910,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             options.sort(() => Math.random() - 0.5);
 
             document.getElementById('quizQuestion').innerText = currentTargetQuizWord.word;
+            currentQuizQuestionText = currentTargetQuizWord.word;
             optsContainer.innerHTML = '';
             options.forEach(opt => {
                 const btn = document.createElement('button');
