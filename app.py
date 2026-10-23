@@ -136,7 +136,7 @@ INDEX_HTML = '''<!DOCTYPE html>
         <div class="bg-white w-full max-w-3xl h-[85vh] p-6 rounded-3xl shadow-2xl border border-slate-100 flex flex-col gap-4">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
                 <div>
-                    <h3 class="font-extrabold text-lg text-slate-800">Нийт Үгсийн Сан (<span id="bankTotalCount">0</span> үг)</h3>
+                    <h3 class="font-extrabold text-lg text-slate-800">Нийт Үгсийн Сан</h3>
                     <p class="text-xs text-slate-500">CEFR А1-С2 түвшний үгсээс сонгон өөрийн сан руу нэмээрэй</p>
                 </div>
                 <button onclick="closeBankModal()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
@@ -145,7 +145,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             <div class="flex flex-col sm:flex-row gap-2">
                 <input type="text" id="bankSearch" oninput="renderBankWords()" placeholder="Үг эсвэл орчуулгаар хайх..." class="flex-1 border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-indigo-500">
                 <select id="bankLevelFilter" onchange="renderBankWords()" class="border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-slate-600 focus:outline-indigo-500">
-                    <option value="ALL">Бүх Түвшин</option>
+                    <option value="ALL">Бүх түвшин</option>
                     <option value="A1">A1 - Анхан шат</option>
                     <option value="A2">A2 - Суурь шат</option>
                     <option value="B1">B1 - Дунд шат</option>
@@ -222,7 +222,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                         <i class="fa-solid fa-brain"></i>
                     </div>
                     <div>
-                        <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Марталтын Муруйн Давтамж (SRS)</div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Марталтын Муруйн Давтамж</div>
                         <div class="text-sm font-bold text-slate-700">Өнөөдөр давтах үгс: <span id="dueWordsCount" class="text-indigo-600 font-black">0</span> / Нийт: <span id="totalWordsCount">0</span></div>
                     </div>
                 </div>
@@ -271,16 +271,15 @@ INDEX_HTML = '''<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- New Navigation Buttons for Flashcards -->
             <div class="flex items-center justify-between gap-3">
-                <button onclick="prevCard()" class="flex-1 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-arrow-left"></i> Өмнөх
+                <button onclick="previousCard()" class="flex-1 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-chevron-left"></i> Өмнөх
                 </button>
-                <button onclick="srsReview(true)" class="flex-2 py-3.5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-check"></i> ✅ Цээжилсэн (Давтах руу оруулах)
+                <button onclick="srsReview(true)" class="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i> Цээжилсэн
                 </button>
-                <button onclick="nextCard()" class="flex-1 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold transition flex items-center justify-center gap-2">
-                    Дараах <i class="fa-solid fa-arrow-right"></i>
+                <button onclick="nextCard()" class="flex-1 py-3.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold transition flex items-center justify-center gap-2">
+                    Дараах <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
         </section>
@@ -378,7 +377,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <div class="flex gap-2">
                         <input type="text" id="newWord" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="Жишээ: recommend" class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-indigo-500 font-semibold">
                         <button onclick="autoGenerateWordInfo()" id="autoBtn" class="bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs px-3 py-2 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center gap-1">
-                            <i class="fa-solid fa-language"></i> Орчуулга
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Орчуулга
                         </button>
                     </div>
                 </div>
@@ -403,6 +402,7 @@ INDEX_HTML = '''<!DOCTYPE html>
     </main>
 
     <script>
+        // Supabase Тохиргоо (Өөрийн Supabase Project URL болон Anon Key-г энд оруулна уу)
         const SUPABASE_URL = 'https://aopbyjndymjfkvkbxsui.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0';
         
@@ -422,50 +422,27 @@ INDEX_HTML = '''<!DOCTYPE html>
             );
         }
 
-        // Optimized Spaced Repetition (SRS) Intervals in Days
-        const SRS_INTERVALS = [1, 3, 7, 14, 30, 90];
+        const SRS_INTERVALS = [1/24, 1, 3, 7, 14, 30, 60]; // 1 цаг, 1, 3, 7, 14, 30, 60 өдөр
 
-        // Extended 600 Core Words Bank (100 words per CEFR Level A1 to C2)
-        const core1500Bank = [
-            // A1 Level (100 words sample / core base)
-            { id: 'a1_1', word: 'apple', level: 'A1', translation: 'Алим', example: 'I eat an apple every day.' },
-            { id: 'a1_2', word: 'book', level: 'A1', translation: 'Ном', example: 'She reads a good book.' },
-            { id: 'a1_3', word: 'cat', level: 'A1', translation: 'Муур', example: 'The cat is sleeping.' },
-            { id: 'a1_4', word: 'dog', level: 'A1', translation: 'Нохой', example: 'My dog is very friendly.' },
-            { id: 'a1_5', word: 'water', level: 'A1', translation: 'Ус', example: 'Water is essential for life.' },
-            { id: 'a1_6', word: 'house', level: 'A1', translation: 'Байшин, гэр', example: 'They live in a big house.' },
-            { id: 'a1_7', word: 'school', level: 'A1', translation: 'Сургууль', example: 'Children go to school.' },
-            { id: 'a1_8', word: 'family', level: 'A1', translation: 'Гэр бүл', example: 'I love my family.' },
-            { id: 'a1_9', word: 'time', level: 'A1', translation: 'Цаг хугацаа', example: 'Time flies so fast.' },
-            { id: 'a1_10', word: 'work', level: 'A1', translation: 'Ажил хийх', example: 'He goes to work early.' },
-            // A2 Level
-            { id: 'a2_1', word: 'achieve', level: 'A2', translation: 'Хүрэх, биелүүлэх', example: 'You can achieve your dreams.' },
-            { id: 'a2_2', word: 'challenge', level: 'A2', translation: 'Сорилт, сорих', example: 'Accept the new challenge.' },
-            { id: 'a2_3', word: 'benefit', level: 'A2', translation: 'Ашиг тус, өгөөж', example: 'Reading has many benefits.' },
-            { id: 'a2_4', word: 'decide', level: 'A2', translation: 'Шийдэх, тогтох', example: 'You need to decide now.' },
-            { id: 'a2_5', word: 'explain', level: 'A2', translation: 'Тайлбарлах', example: 'Please explain the rule.' },
-            // B1 Level
-            { id: 'b1_1', word: 'recommend', level: 'B1', translation: 'Санал болгох, зөвлөх', example: 'I highly recommend this movie.' },
-            { id: 'b1_2', word: 'eager', level: 'B1', translation: 'Хүсэн хүлээсэн, эрмэлзэлтэй', example: 'He is eager to learn English.' },
-            { id: 'b1_3', word: 'inspire', level: 'B1', translation: 'Урам зориг өгөх', example: 'His work inspires millions.' },
-            { id: 'b1_4', word: 'opportunity', level: 'B1', translation: 'Боломж, бололцоо', example: 'Take this great opportunity.' },
-            { id: 'b1_5', word: 'essential', level: 'B1', translation: 'Чухал, амин шаардлагатай', example: 'Water is essential for life.' },
-            // B2 Level
-            { id: 'b2_1', word: 'resilient', level: 'B2', translation: 'Хатуужилтай, уян хатан', example: 'She is resilient in hard times.' },
-            { id: 'b2_2', word: 'abandon', level: 'B2', translation: 'Орхих, хаях', example: 'Never abandon your goals.' },
-            { id: 'b2_3', word: 'accurate', level: 'B2', translation: 'Үнэн зөв, нягт', example: 'The data must be accurate.' },
-            { id: 'b2_4', word: 'determine', level: 'B2', translation: 'Тодорхойлох, шийдэх', example: 'Determine your main goal.' },
-            { id: 'b2_5', word: 'consider', level: 'B2', translation: 'Авч үзэх, бодож үзэх', example: 'Please consider my suggestion.' },
-            // C1 Level
-            { id: 'c1_1', word: 'persistent', level: 'C1', translation: 'Цөхрөлтгүй, шуурхай', example: 'Practice with persistent effort.' },
-            { id: 'c1_2', word: 'fundamental', level: 'C1', translation: 'Үндсэн, суурь', example: 'Education is a fundamental right.' },
-            { id: 'c1_3', word: 'comprehensive', level: 'C1', translation: 'Бүх талыг хамарсан, цогц', example: 'We offer a comprehensive guide.' },
-            { id: 'c1_4', word: 'ameliorate', level: 'C1', translation: 'Сайжруулах, засах', example: 'Steps to ameliorate working conditions.' },
-            // C2 Level
-            { id: 'c2_1', word: 'ubiquitous', level: 'C2', translation: 'Бүх газар байдаг, түгээмэл', example: 'Smartphones have become ubiquitous.' },
-            { id: 'c2_2', word: 'ephemeral', level: 'C2', translation: 'Түр зуурын, богино настай', example: 'Fame in social media is ephemeral.' },
-            { id: 'c2_3', word: 'paradigmatic', level: 'C2', translation: 'Үлгэр жишээ болсон', example: 'A paradigmatic shift in science.' }
-        ];
+        // Түвшин бүрийн 100 түгээмэл үг; нийт 600 үг. Орчуулгыг банкнаас/онлайн толь бичгээс нөхөж болно.
+        const levelWordLists = {
+          "A1": ["a", "an", "the", "I", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "my", "your", "his", "its", "our", "their", "this", "that", "these", "those", "who", "what", "where", "when", "why", "how", "yes", "no", "not", "all", "some", "any", "many", "much", "more", "most", "less", "few", "one", "two", "three", "first", "last", "new", "old", "good", "bad", "big", "small", "long", "short", "high", "low", "hot", "cold", "happy", "sad", "easy", "hard", "right", "wrong", "same", "different", "important", "possible", "able", "can", "could", "will", "would", "should", "must", "may", "go", "come", "get", "make", "do", "have", "be", "say", "see", "know", "think", "want", "need", "like", "love", "work", "play", "eat", "drink", "sleep", "read", "write"],
+          "A2": ["about", "above", "across", "after", "against", "along", "among", "around", "before", "behind", "below", "beside", "between", "beyond", "during", "inside", "outside", "near", "next", "onto", "over", "past", "through", "toward", "under", "until", "within", "without", "according", "actually", "advice", "affect", "afford", "agree", "allow", "although", "amount", "appear", "apply", "area", "arrive", "article", "attention", "avoid", "aware", "basic", "believe", "belong", "benefit", "bill", "borrow", "break", "business", "cancel", "career", "cause", "center", "certain", "change", "choice", "choose", "common", "compare", "complete", "condition", "consider", "continue", "control", "correct", "cost", "create", "culture", "customer", "daily", "decide", "decision", "deliver", "depend", "describe", "design", "develop", "die", "difference", "difficult", "direction", "discover", "discuss", "disease", "distance", "divide", "education", "effect", "effort", "either", "else", "empty", "energy", "enjoy", "enough", "enter"],
+          "B1": ["abandon", "ability", "abroad", "absence", "absorb", "abstract", "academic", "accept", "access", "accompany", "accomplish", "account", "accurate", "achieve", "acknowledge", "acquire", "adapt", "additional", "adequate", "adjust", "administration", "admire", "admit", "adopt", "advance", "advantage", "adventure", "advertise", "advocate", "alternative", "ambition", "analyze", "announce", "annual", "anticipate", "anxiety", "apologize", "apparent", "appeal", "appreciate", "approach", "appropriate", "approve", "argue", "arrangement", "assess", "assignment", "assist", "assume", "atmosphere", "attach", "attempt", "attitude", "attract", "authority", "available", "average", "avoid", "background", "balance", "barrier", "basis", "behavior", "belief", "blame", "board", "boundary", "branch", "budget", "candidate", "capable", "capacity", "capture", "category", "challenge", "circumstance", "claim", "clarify", "classic", "client", "climate", "colleague", "combine", "comfort", "command", "commit", "communicate", "community", "company", "complex", "concentrate", "concept", "concern", "conclude", "conduct", "confidence", "conflict", "confuse", "connect", "consequence"],
+          "B2": ["abolish", "abrupt", "absence", "absolute", "abstract", "accelerate", "accessible", "accommodate", "accumulate", "accusation", "adjacent", "advocate", "aesthetic", "albeit", "allocate", "alter", "ambiguous", "amend", "analogy", "anticipate", "arbitrary", "articulate", "aspire", "assert", "assess", "asset", "assign", "assumption", "assurance", "attain", "attribute", "authentic", "autonomous", "avenue", "bias", "coincide", "collaborate", "commence", "commission", "commodity", "compatible", "compensate", "compile", "complement", "comply", "component", "comprehensive", "comprise", "compromise", "conceive", "concurrent", "confer", "confine", "conform", "consensus", "consent", "consecutive", "constrain", "consult", "contemplate", "contradict", "controversial", "convene", "convey", "conviction", "coordinate", "corporate", "correspond", "criterion", "crucial", "cumulative", "curriculum", "cynical", "decade", "decisive", "dedicated", "deficiency", "depict", "deploy", "derive", "deteriorate", "devise", "dilemma", "diminish", "discrete", "displace", "dispose", "distinct", "distort", "diverse", "doctrine", "domestic", "dominant", "duration", "elaborate", "eligible", "eliminate", "elite", "embody", "empirical"],
+          "C1": ["aberration", "abhor", "abject", "abrogate", "abscond", "abstruse", "accolade", "accretion", "acumen", "adamant", "admonish", "adulterate", "aesthetic", "affinity", "alleviate", "aloof", "altruistic", "ambiguity", "ameliorate", "amenable", "anachronism", "analogous", "anomaly", "antagonize", "antipathy", "apathy", "appease", "apprehensive", "arbitrary", "ardent", "arduous", "articulate", "ascertain", "ascetic", "assiduous", "astute", "audacious", "augment", "austere", "autonomy", "aversion", "belittle", "benevolent", "benign", "bolster", "brevity", "cajole", "candid", "capricious", "catalyst", "caustic", "censure", "cerebral", "charisma", "circumvent", "clandestine", "coalesce", "coercion", "cogent", "coherent", "complacent", "concise", "concede", "condescending", "condone", "conducive", "conjecture", "connoisseur", "consensus", "contentious", "contrite", "convoluted", "copious", "corroborate", "credence", "cryptic", "culpable", "cursory", "cynical", "dearth", "debacle", "decorum", "deference", "delineate", "demur", "denounce", "deride", "desolate", "despondent", "deterrent", "detriment", "deviate", "dexterous", "dichotomy", "diffident", "digression", "diligent", "discern", "disparate", "disseminate"],
+          "C2": ["abstruse", "accede", "acrimony", "adumbrate", "alacrity", "anathema", "apocryphal", "approbation", "assiduity", "assuage", "attenuate", "avarice", "bellicose", "bombastic", "cacophony", "calumny", "capitulate", "castigate", "chicanery", "churlish", "circumlocution", "cogitation", "commensurate", "compunction", "confluence", "connivance", "consummate", "contumacious", "contravene", "convivial", "credulous", "cupidity", "debilitate", "decorous", "deleterious", "demagogue", "denouement", "desultory", "diatribe", "didactic", "diffidence", "dilatory", "disingenuous", "dissonance", "ebullient", "effervescent", "egregious", "elicit", "emollient", "encomium", "endemic", "enervate", "ephemeral", "epiphany", "equivocation", "erudition", "exacerbate", "excoriate", "exigency", "expatiate", "expeditious", "extol", "fallacious", "fastidious", "fecund", "felicitous", "fervid", "flagrant", "florid", "foment", "fortuitous", "fractious", "fulminate", "garrulous", "grandiloquent", "gratuitous", "harangue", "hegemony", "iconoclast", "immutable", "impecunious", "impertinent", "impetuous", "inchoate", "incipient", "inculcate", "indefatigable", "ineffable", "inexorable", "ingenuous", "inimical", "inscrutable", "insipid", "insolent", "intrepid", "invective", "invidious", "irascible", "laconic", "largesse"]
+        };
+        
+        const core1500Bank = Object.entries(levelWordLists).flatMap(([level, words]) =>
+            words.map((word, i) => ({
+                id: `${level.toLowerCase()}_${i+1}`, word, level,
+                translation: ({apple:'Алим', book:'Ном', achieve:'Хүрэх, биелүүлэх', recommend:'Санал болгох, зөвлөх'})[word.toLowerCase()] || '',
+                mnemonic: '',
+                example: `I use the word "${word}" in everyday conversation.`
+            }))
+        );
+
 
         let currentUserSession = null;
         let userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
@@ -631,15 +608,12 @@ INDEX_HTML = '''<!DOCTYPE html>
         function filterSRSWords() {
             const now = Date.now();
             activeDueWords = userData.words.filter(w => !w.nextReviewDate || w.nextReviewDate <= now);
-            if (activeDueWords.length === 0) activeDueWords = [...userData.words];
-
             document.getElementById('dueWordsCount').innerText = activeDueWords.length;
             document.getElementById('totalWordsCount').innerText = userData.words.length;
             currentIndex = 0;
             renderFlashcard();
         }
 
-        // Updated SRS Review to handle "Цээжилсэн" -> moves to review queue with extended interval
         function srsReview(remembered) {
             if (checkExamRequirement()) {
                 alert('Та эхний 30 үгээ цээжилж дуусгасан тул 3 хоног тутамд заавал ШАЛГАЛТ өгөх дүрэм идэвхжлээ!');
@@ -648,21 +622,22 @@ INDEX_HTML = '''<!DOCTYPE html>
             }
             if (!activeDueWords || activeDueWords.length === 0) return;
             const w = activeDueWords[currentIndex];
-
             if (remembered) {
-                w.srsLevel = (w.srsLevel || 0) + 1;
-                if (w.srsLevel >= SRS_INTERVALS.length) w.srsLevel = SRS_INTERVALS.length - 1;
+                w.srsLevel = Math.min((w.srsLevel || 0) + 1, SRS_INTERVALS.length - 1);
+                w.lastReviewedAt = Date.now();
                 w.nextReviewDate = Date.now() + (SRS_INTERVALS[w.srsLevel] * 24 * 60 * 60 * 1000);
+                w.reviewStatus = 'scheduled';
             } else {
                 w.srsLevel = 0;
-                w.nextReviewDate = Date.now();
+                w.nextReviewDate = Date.now() + 10 * 60 * 1000;
+                w.reviewStatus = 'again-soon';
             }
             saveUserData();
-            nextCard();
+            filterSRSWords();
         }
 
         function openEditModal(id) {
-            const w = userData.words.find(item => item.id === id);
+            const w = userData.words.find(item => String(item.id) === String(id)) || core1500Bank.find(item => String(item.id) === String(id));
             if (!w) return;
             document.getElementById('editWordId').value = w.id;
             document.getElementById('editWordText').value = w.word;
@@ -676,19 +651,43 @@ INDEX_HTML = '''<!DOCTYPE html>
             document.getElementById('editModal').classList.add('hidden');
         }
 
-        function saveEditWord() {
-            const id = parseInt(document.getElementById('editWordId').value);
-            const w = userData.words.find(item => item.id === id);
-            if (w) {
-                w.word = escapeHTML(document.getElementById('editWordText').value.trim());
-                w.translation = escapeHTML(document.getElementById('editTranslationText').value.trim());
-                w.mnemonic = escapeHTML(document.getElementById('editMnemonicText').value.trim());
-                w.example = escapeHTML(document.getElementById('editExampleText').value.trim());
-                saveUserData();
-                renderWordbook();
-                renderFlashcard();
-                closeEditModal();
+
+        async function translateBankWord(id) {
+            const item = core1500Bank.find(x => x.id === id);
+            if (!item) return;
+            try {
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.word)}&langpair=en|mn`);
+                if (!response.ok) throw new Error('Орчуулгын үйлчилгээ хариу өгсөнгүй');
+                const data = await response.json();
+                const translated = data?.responseData?.translatedText || '';
+                if (!translated || /MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translated)) {
+                    alert('Орчуулга олдсонгүй. “Засах” товчоор гараар оруулна уу.'); return;
+                }
+                item.translation = translated;
+                renderBankWords();
+            } catch (e) {
+                alert('Орчуулга татаж чадсангүй. Интернэтээ шалгана уу.');
             }
+        }
+
+        function editBankWord(id) { openEditModal(id); }
+
+        function saveEditWord() {
+            const id = document.getElementById('editWordId').value;
+            const w = userData.words.find(item => String(item.id) === String(id));
+            const bankWord = core1500Bank.find(item => String(item.id) === String(id));
+            const target = w || bankWord;
+            if (!target) return;
+            target.word = document.getElementById('editWordText').value.trim();
+            target.translation = document.getElementById('editTranslationText').value.trim();
+            target.mnemonic = document.getElementById('editMnemonicText').value.trim();
+            target.example = document.getElementById('editExampleText').value.trim();
+            if (w) {
+                saveUserData(); renderWordbook(); renderFlashcard();
+            } else {
+                renderBankWords();
+            }
+            closeEditModal();
         }
 
         function openBankModal() {
@@ -706,14 +705,18 @@ INDEX_HTML = '''<!DOCTYPE html>
             const container = document.getElementById('bankWordList');
             container.innerHTML = '';
 
+            const counts = Object.fromEntries(['A1','A2','B1','B2','C1','C2'].map(l => [l, core1500Bank.filter(b => b.level === l).length]));
+            const allOption = document.querySelector('#bankLevelFilter option[value="ALL"]');
+            if (allOption) allOption.textContent = `Бүх түвшин (${core1500Bank.length} үг)`;
+            ['A1','A2','B1','B2','C1','C2'].forEach(l => {
+                const opt = document.querySelector(`#bankLevelFilter option[value="${l}"]`);
+                if (opt) opt.textContent = `${l} (${counts[l]} үг)`;
+            });
             const filtered = core1500Bank.filter(b => {
                 const matchQ = b.word.toLowerCase().includes(query) || b.translation.toLowerCase().includes(query);
                 const matchL = level === 'ALL' || b.level === level;
                 return matchQ && matchL;
             });
-
-            // Update Total Count display dynamically
-            document.getElementById('bankTotalCount').innerText = filtered.length;
 
             filtered.forEach(item => {
                 const isAdded = userData.words.some(w => w.word.toLowerCase() === item.word.toLowerCase());
@@ -725,10 +728,10 @@ INDEX_HTML = '''<!DOCTYPE html>
                             <div class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
                                 ${item.word} <span class="text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-md font-bold">${item.level}</span>
                             </div>
-                            <div class="text-xs text-slate-500 font-medium">${item.translation}</div>
+                            <div class="text-xs text-slate-500 font-medium">${item.translation || 'Орчуулга авахын тулд засварлах эсвэл үг нэмэх хэсгийн “Орчуулга” товчийг ашиглана уу'}</div>
                         </div>
                     </div>
-                    ${isAdded ? `<span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-check"></i> Нэмэгдсэн</span>` : `<button onclick="addFromBank('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition">+ Нэмэх</button>`}
+                    <div class="flex gap-2 items-center">${isAdded ? `<span class="text-emerald-600 font-bold text-xs">Нэмэгдсэн</span>` : `<button onclick="addFromBank('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Нэмэх</button>`}<button onclick="translateBankWord('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Орчуулах</button><button onclick="editBankWord('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Засах</button></div>
                 `;
                 container.appendChild(div);
             });
@@ -738,10 +741,10 @@ INDEX_HTML = '''<!DOCTYPE html>
             const bItem = core1500Bank.find(b => b.id === bankId);
             if (!bItem) return;
             userData.words.push({
-                id: Date.now() + Math.random(),
+                id: Date.now(),
                 word: bItem.word,
                 phonetic: `/${bItem.word.toLowerCase()}/`,
-                translation: bItem.translation,
+                translation: bItem.translation || "Орчуулга авах шаардлагатай",
                 mnemonic: '',
                 example: bItem.example,
                 category: `CEFR ${bItem.level}`,
@@ -776,11 +779,8 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         function renderFlashcard() {
             if (!activeDueWords || activeDueWords.length === 0) {
-                document.getElementById('cardWord').innerText = "Үг байхгүй";
-                document.getElementById('cardTranslation').innerText = "Нийт үгсийн сангаас үг нэмнэ үү";
-                document.getElementById('cardPhonetic').innerText = "/.../";
-                document.getElementById('cardMnemonic').innerText = "💡 Түлхүүр холбоос байхгүй";
-                document.getElementById('cardExample').innerText = "Жишээ өгүүлбэр байхгүй.";
+                document.getElementById('cardWord').innerText = "Давтах үг алга";
+                document.getElementById('cardTranslation').innerText = "Дараагийн давталтын цаг болоогүй байна. Нийт үгсийн сангаас үг нэмэх эсвэл дараа дахин орно уу.";
                 return;
             }
             const w = activeDueWords[currentIndex];
@@ -790,21 +790,19 @@ INDEX_HTML = '''<!DOCTYPE html>
             document.getElementById('cardMnemonic').innerText = '💡 ' + (w.mnemonic || 'Түлхүүр санамж байхгүй');
             document.getElementById('cardExample').innerText = w.example || 'Example sentence.';
             document.getElementById('cardImage').src = w.image || 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300';
-            document.getElementById('cardIntervalTag').innerText = `SRS Level: ${w.srsLevel || 0}`;
+            document.getElementById('cardIntervalTag').innerText = `SRS: Day ${SRS_INTERVALS[w.srsLevel || 0]}`;
             document.getElementById('flashcard').classList.remove('rotate-y-180');
         }
 
         function flipCard() { document.getElementById('flashcard').classList.toggle('rotate-y-180'); }
-        
         function nextCard() {
             if (!activeDueWords || activeDueWords.length === 0) return;
-            currentIndex = (currentIndex + 1) % activeDueWords.length;
+            currentIndex = Math.min(currentIndex + 1, activeDueWords.length - 1);
             renderFlashcard();
         }
-
-        function prevCard() {
+        function previousCard() {
             if (!activeDueWords || activeDueWords.length === 0) return;
-            currentIndex = (currentIndex - 1 + activeDueWords.length) % activeDueWords.length;
+            currentIndex = Math.max(0, currentIndex - 1);
             renderFlashcard();
         }
 
@@ -818,29 +816,38 @@ INDEX_HTML = '''<!DOCTYPE html>
         function speakCurrentWord() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].word); }
         function speakCurrentExample() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].example); }
 
-        // Fixed Auto-Translation functionality using MyMemory API
         async function autoGenerateWordInfo() {
-            const wordInput = escapeHTML(document.getElementById('newWord').value.trim().toLowerCase());
+            const wordInput = document.getElementById('newWord').value.trim().toLowerCase();
             if (!wordInput) { alert('Эхлээд англи үгээ оруулна уу!'); return; }
-            
-            const autoBtn = document.getElementById('autoBtn');
-            autoBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Хайж байна...';
-
+            const btn = document.getElementById('autoBtn');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Орчуулж байна...';
             try {
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(wordInput)}&langpair=en|mn`);
-                const data = await res.json();
-                
-                if (data && data.responseData && data.responseData.translatedText) {
-                    document.getElementById('newTranslation').value = data.responseData.translatedText;
-                } else {
-                    document.getElementById('newTranslation').value = `${wordInput} орчуулга`;
+                const local = core1500Bank.find(x => x.word.toLowerCase() === wordInput && x.translation);
+                let translation = local?.translation || '';
+                if (!translation) {
+                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(wordInput)}&langpair=en|mn`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Орчуулгын үйлчилгээ хариу өгсөнгүй');
+                    const data = await response.json();
+                    translation = data?.responseData?.translatedText || '';
+                    if (/MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translation)) translation = '';
                 }
-                document.getElementById('newExample').value = `This is a sentence with ${wordInput}.`;
-            } catch (e) {
-                document.getElementById('newTranslation').value = `${wordInput} орчуулга`;
-                document.getElementById('newExample').value = `Example with ${wordInput}.`;
+                document.getElementById('newTranslation').value = translation;
+                try {
+                    const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordInput)}`);
+                    const dict = await dictResponse.json();
+                    const meaning = dict?.[0]?.meanings?.[0]?.definitions?.[0];
+                    document.getElementById('newExample').value = meaning?.example || `I often use "${wordInput}" when I speak English.`;
+                    document.getElementById('newMnemonic').value = meaning?.definition || '';
+                } catch (_) {
+                    document.getElementById('newExample').value = `I often use "${wordInput}" when I speak English.`;
+                }
+                if (!translation) alert('Орчуулга автоматаар олдсонгүй. Орчуулгын талбарыг гараар бөглөнө үү.');
+            } catch (err) {
+                alert('Онлайн орчуулга амжилтгүй боллоо. Интернэтээ шалгаад дахин оролдоно уу. ' + err.message);
+                document.getElementById('newExample').value = `I often use "${wordInput}" when I speak English.`;
             } finally {
-                autoBtn.innerHTML = '<i class="fa-solid fa-language"></i> Орчуулга';
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Орчуулга';
             }
         }
 
@@ -910,7 +917,6 @@ INDEX_HTML = '''<!DOCTYPE html>
             options.sort(() => Math.random() - 0.5);
 
             document.getElementById('quizQuestion').innerText = currentTargetQuizWord.word;
-            currentQuizQuestionText = currentTargetQuizWord.word;
             optsContainer.innerHTML = '';
             options.forEach(opt => {
                 const btn = document.createElement('button');
@@ -933,7 +939,8 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         function startNewExam() {
             if (!userData.words || userData.words.length === 0) { alert('Үгсийн сан хоосон байна!'); return; }
-            examQuestions = [...userData.words].sort(() => Math.random() - 0.5).slice(0, 10);
+            const requestedCount = Math.max(5, Math.min(100, parseInt(document.getElementById('examWordCountInput').value, 10) || 10));
+            examQuestions = [...userData.words].sort(() => Math.random() - 0.5).slice(0, requestedCount);
             examCurrentIdx = 0;
             examScoreCount = 0;
             document.getElementById('examActiveBox').classList.remove('hidden');
