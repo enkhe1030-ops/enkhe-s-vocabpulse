@@ -18,6 +18,7 @@ INDEX_HTML = '''<!DOCTYPE html>
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#4f46e5">
 
     <style>
@@ -99,7 +100,7 @@ INDEX_HTML = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <!-- EDIT WORD MODAL (Requirement 2: Засах боломж бүх талбарт) -->
+    <!-- EDIT WORD MODAL -->
     <div id="editModal" style="z-index: 99999; position: fixed; isolation: isolate;" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg p-6 rounded-3xl shadow-2xl border border-slate-100 flex flex-col gap-4">
             <div class="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -183,6 +184,13 @@ INDEX_HTML = '''<!DOCTYPE html>
         </div>
     </header>
 
+    <!-- EXAM LOCK BANNER -->
+    <div id="examLockBanner" class="hidden bg-amber-500 text-white text-xs font-bold px-4 py-3 text-center shadow-inner flex items-center justify-center gap-2">
+        <i class="fa-solid fa-lock text-sm"></i>
+        <span>Та эхний 30 үгээ цээжилж дуусгасан тул 3 хоног тутамд заавал ШАЛГАЛТ өгөх дүрэм идэвхжлээ! Үргэлжлүүлэн суралцахын тулд шалгалт өгнө үү.</span>
+        <button onclick="switchTab('exam')" class="bg-white text-amber-700 px-3 py-1 rounded-lg text-xs font-black shadow hover:bg-slate-100 transition ml-2">Шалгалт өгөх</button>
+    </div>
+
     <!-- Main Content -->
     <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-6 flex flex-col gap-6">
 
@@ -196,6 +204,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             </button>
             <button onclick="switchTab('exam')" id="tab-exam" class="tab-btn py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 relative">
                 <i class="fa-solid fa-file-signature"></i> <span class="hidden sm:inline">Шалгалт</span>
+                <span id="examDot" class="hidden absolute top-1 right-2 w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
             </button>
             <button onclick="switchTab('wordbook')" id="tab-wordbook" class="tab-btn py-2.5 rounded-xl text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5">
                 <i class="fa-solid fa-book-bookmark"></i> <span class="hidden sm:inline">Жагсаалт</span>
@@ -205,13 +214,23 @@ INDEX_HTML = '''<!DOCTYPE html>
             </button>
         </div>
 
-        <!-- 1. Flashcards (Цээжлэх хэсэг: Үг / Холбоо үг таб) -->
+        <!-- 1. Flashcards -->
         <section id="sec-flashcards" class="flex flex-col gap-6">
-            <div class="flex items-center justify-center bg-slate-200 p-1 rounded-2xl gap-2 w-fit mx-auto text-xs font-bold">
-                <button onclick="setFlashcardMode('word')" id="fcModeWord" class="px-4 py-2 rounded-xl bg-white text-indigo-600 shadow-sm transition">Үг цээжлэх</button>
-                <button onclick="setFlashcardMode('phrase')" id="fcModePhrase" class="px-4 py-2 rounded-xl text-slate-600 transition">Холбоо үг цээжлэх</button>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="setFlashcardMode('words')" id="flashModeWords" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">Үг цээжлэх</button>
+                <button onclick="setFlashcardMode('phrases')" id="flashModePhrases" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-700 text-xs font-bold">Холбоо үг цээжлэх</button>
             </div>
-
+            <div id="phrasePanel" class="hidden bg-white p-5 rounded-2xl border border-slate-200">
+                <h3 class="font-bold mb-2">Холбоо үг / хэлц цээжлэх</h3>
+                <p class="text-xs text-slate-500 mb-3">Англи холбоо үг болон монгол утгыг оруулж хадгална.</p>
+                <div class="grid gap-2 sm:grid-cols-2">
+                    <input id="phraseEnglish" class="border rounded-xl p-3 text-sm" placeholder="Англи холбоо үг (take a break)">
+                    <input id="phraseMongolian" class="border rounded-xl p-3 text-sm" placeholder="Монгол утга">
+                </div>
+                <button onclick="savePhrase()" class="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-bold">Холбоо үг хадгалах</button>
+                <div id="phraseList" class="mt-3 grid gap-2"></div>
+            </div>
+            <div id="wordFlashcardPanel">
             <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-3 w-full sm:w-auto">
                     <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
@@ -229,15 +248,22 @@ INDEX_HTML = '''<!DOCTYPE html>
                 </div>
             </div>
 
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex-1">
+                    <h3 class="font-bold text-sm">Өдөр тутмын шинэ үг</h3>
+                    <p class="text-xs text-slate-500">A1–C2 түвшин бүрээс өдөр бүр автоматаар нэмнэ</p>
+                </div>
+                <label class="text-xs font-semibold">Түвшин бүрд
+                    <input id="dailyWordCount" type="number" min="1" max="50" value="5" class="ml-1 w-16 border rounded-lg p-2">
+                </label>
+                <button onclick="saveDailyWordSetting(true)" class="bg-indigo-600 text-white text-xs font-bold rounded-xl px-4 py-2">Тохируулах / Өнөөдөр нэмэх</button>
+            </div>
             <div id="cardContainer" class="w-full h-96 perspective cursor-pointer">
                 <div id="flashcard" onclick="flipCard()" class="w-full h-full relative transform-style-3d transition-transform duration-500 rounded-3xl shadow-xl bg-white border border-slate-200">
                     <div class="absolute inset-0 backface-hidden p-8 flex flex-col justify-between items-center text-center">
                         <div class="w-full flex justify-between items-center text-slate-400 text-xs font-semibold">
                             <span class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full"><i class="fa-solid fa-eye-slash"></i> Active Recall</span>
-                            <div class="flex items-center gap-2">
-                                <button onclick="event.stopPropagation(); openEditModalFromCard()" class="text-indigo-600 hover:text-indigo-800 p-2 text-sm" title="Картан дээрээс засах"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="event.stopPropagation(); speakCurrentWord()" class="hover:text-indigo-600 p-2 text-base"><i class="fa-solid fa-volume-high"></i></button>
-                            </div>
+                            <button onclick="event.stopPropagation(); speakCurrentWord()" class="hover:text-indigo-600 p-2 text-base"><i class="fa-solid fa-volume-high"></i></button>
                         </div>
                         <div>
                             <h2 id="cardWord" class="text-4xl font-black text-slate-800 tracking-tight mb-2">Word</h2>
@@ -251,10 +277,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <div class="absolute inset-0 backface-hidden rotate-y-180 p-6 flex flex-col justify-between bg-slate-900 text-white rounded-3xl overflow-hidden">
                         <div class="relative z-10 flex justify-between items-center">
                             <span class="bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 px-3 py-1 rounded-full text-xs font-semibold" id="cardIntervalTag">SRS: Day 1</span>
-                            <div class="flex items-center gap-2">
-                                <button onclick="event.stopPropagation(); openEditModalFromCard()" class="text-indigo-300 hover:text-white p-2 text-sm" title="Картан дээрээс засах"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="event.stopPropagation(); speakCurrentWord()" class="hover:text-indigo-400 p-2 text-base text-slate-300"><i class="fa-solid fa-volume-high"></i></button>
-                            </div>
+                            <button onclick="event.stopPropagation(); speakCurrentWord()" class="hover:text-indigo-400 p-2 text-base text-slate-300"><i class="fa-solid fa-volume-high"></i></button>
                         </div>
 
                         <div class="relative z-10 flex flex-col items-center text-center gap-3 my-auto">
@@ -284,65 +307,64 @@ INDEX_HTML = '''<!DOCTYPE html>
                     Дараах <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
+            </div>
         </section>
 
-        <!-- 2. Quiz Section (Сорилт хэсэг: Сонсож олох & Орчуулга хийх таб) -->
+        <!-- 2. Quiz Section -->
         <section id="sec-quiz" class="hidden flex flex-col gap-6">
             <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b border-slate-100">
                     <div>
-                        <h3 class="font-extrabold text-lg text-slate-800">Сорилт & Орчуулга</h3>
-                        <p class="text-xs text-slate-500">Үг сорих болон дурын текст/дууны үг орчуулах хэсэг</p>
+                        <h3 class="font-extrabold text-lg text-slate-800">Үгсийн Сорилт</h3>
+                        <p class="text-xs text-slate-500">Зөв хариулсан үгс сорилтоос хасагдана</p>
                     </div>
                     
                     <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold gap-1 flex-wrap justify-center">
                         <button onclick="setQuizMode('en-mn')" id="quizModeEnMn" class="px-3 py-1.5 rounded-lg bg-white text-indigo-600 shadow-sm">Англи ➔ Монгол</button>
                         <button onclick="setQuizMode('mn-en')" id="quizModeMnEn" class="px-3 py-1.5 rounded-lg text-slate-500">Монгол ➔ Англи</button>
-                        <button onclick="setQuizMode('audio')" id="quizModeAudio" class="px-3 py-1.5 rounded-lg text-slate-500"><i class="fa-solid fa-headphones"></i> Сонсож олох</button>
-                        <button onclick="setQuizMode("translate")" id="quizModeTranslate" class="px-3 py-1.5 rounded-lg text-slate-500"><i class="fa-solid fa-language"></i> Орчуулга хийх</button>
+                        <button onclick="setQuizMode('fill')" id="quizModeFill" class="px-3 py-1.5 rounded-lg text-slate-500">Үг нөхөх</button>
                     </div>
                 </div>
 
+                <div class="flex gap-2 flex-wrap mb-4">
+                    <button onclick="showQuizTool('quiz')" class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold">Үгийн сорилт</button>
+                    <button onclick="showQuizTool('listen')" class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold">Сонсож сонгох</button>
+                    <button onclick="showQuizTool('translate')" class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 text-xs font-bold">Орчуулга хийх</button>
+                </div>
+                <div id="listenPanel" class="hidden border rounded-2xl p-5 mb-4">
+                    <h3 class="font-bold mb-2">Англи үгийг сонсоод зөв хариулт сонгох</h3>
+                    <button onclick="startListeningQuiz()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold">Эхлүүлэх</button>
+                    <p id="listenPrompt" class="text-sm text-slate-500 my-3">Эхлүүлэхэд үгийг автоматаар уншина.</p>
+                    <div id="listenOptions" class="grid sm:grid-cols-2 gap-2"></div>
+                </div>
+                <div id="translatePanel" class="hidden border rounded-2xl p-5 mb-4">
+                    <h3 class="font-bold mb-2">Текст / дууны үг орчуулах</h3>
+                    <textarea id="translateInput" rows="5" class="w-full border rounded-xl p-3 text-sm" placeholder="Орчуулах дурын текст эсвэл дууны үгээ оруулна уу..."></textarea>
+                    <div class="flex gap-2 mt-2">
+                        <select id="translateDirection" class="border rounded-xl p-2 text-sm"><option value="en|mn">Англи → Монгол</option><option value="mn|en">Монгол → Англи</option></select>
+                        <button onclick="translateFreeText()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold">Орчуулах</button>
+                    </div>
+                    <div id="translateOutput" class="mt-3 whitespace-pre-wrap text-sm bg-slate-50 rounded-xl p-3"></div>
+                </div>
                 <div id="quizContent" class="flex flex-col gap-6">
-                    <div id="standardQuizBox" class="flex flex-col gap-6">
-                        <div class="bg-indigo-50/70 p-6 rounded-2xl border border-indigo-100 text-center flex flex-col items-center gap-2">
-                            <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider" id="quizQuestionType">Асуулт</span>
-                            <div class="flex items-center justify-center gap-3">
-                                <h2 id="quizQuestion" class="text-2xl sm:text-3xl font-black text-slate-800">Word</h2>
-                                <button id="quizQuestionAudio" onclick="speakText(currentQuizQuestionText)" class="text-indigo-600 hover:text-indigo-800 text-xl"><i class="fa-solid fa-volume-high"></i></button>
-                            </div>
+                    <div class="bg-indigo-50/70 p-6 rounded-2xl border border-indigo-100 text-center flex flex-col items-center gap-2">
+                        <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider" id="quizQuestionType">Асуулт</span>
+                        <div class="flex items-center justify-center gap-3">
+                            <h2 id="quizQuestion" class="text-2xl sm:text-3xl font-black text-slate-800">Word</h2>
+                            <button id="quizQuestionAudio" onclick="speakText(currentQuizQuestionText)" class="text-indigo-600 hover:text-indigo-800 text-xl"><i class="fa-solid fa-volume-high"></i></button>
                         </div>
-                        <div id="quizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
                     </div>
 
-                    <!-- Audio Quiz Box -->
-                    <div id="audioQuizBox" class="hidden flex flex-col items-center text-center gap-6 py-8">
-                        <div class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl shadow-md animate-pulse">
-                            <i class="fa-solid fa-headphones"></i>
+                    <div id="quizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                    <div id="letterQuiz" class="hidden flex flex-col items-center gap-4">
+                        <p id="letterSentence" class="text-center text-lg font-semibold text-slate-700"></p>
+                        <div id="letterAnswer" class="flex flex-wrap justify-center gap-2 min-h-12"></div>
+                        <div id="letterChoices" class="flex flex-wrap justify-center gap-2"></div>
+                        <div class="flex gap-2">
+                            <button onclick="undoLetter()" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-sm">Нэг үсэг буцаах</button>
+                            <button onclick="resetLetters()" class="px-4 py-2 rounded-xl bg-slate-100 font-bold text-sm">Дахин оролдох</button>
                         </div>
-                        <div>
-                            <h4 class="font-extrabold text-lg text-slate-800 mb-1">Сонсоод зөв хариултыг сонгоно уу</h4>
-                            <p class="text-xs text-slate-500">Эхлүүлэх товчийг дарж үгийг сонсоно уу</p>
-                        </div>
-                        <button onclick="startAudioQuizSession()" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow hover:bg-indigo-700 transition">
-                            <i class="fa-solid fa-play"></i> Эхлүүлэх & Үг хэлэх
-                        </button>
-                        <div id="audioQuizOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full mt-4 hidden"></div>
-                    </div>
-
-                    <!-- Translation Box -->
-                    <div id="translationBox" class="hidden flex flex-col gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Дурын текст эсвэл дууны үг оруулах (Англи ➔ Монгол)</label>
-                            <textarea id="translateInputText" rows="5" placeholder="Энд текст эсвэл дууны үгээ хуулж тавина уу..." class="w-full border border-slate-200 rounded-2xl p-4 text-sm focus:outline-indigo-500"></textarea>
-                        </div>
-                        <button onclick="performTextTranslation()" class="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow">
-                            Орчуулах
-                        </button>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Орчуулсан үр дүн</label>
-                            <div id="translateResultOutput" class="w-full min-h-[120px] bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 whitespace-pre-wrap"></div>
-                        </div>
+                        <p id="letterFeedback" class="text-sm font-bold" aria-live="polite"></p>
                     </div>
                 </div>
 
@@ -359,17 +381,19 @@ INDEX_HTML = '''<!DOCTYPE html>
             </div>
         </section>
 
-        <!-- 3. Exam Section (Шалгалт хэсэг) -->
+        <!-- 3. Exam Section -->
         <section id="sec-exam" class="hidden flex flex-col gap-6">
             <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                 <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b border-slate-100">
                     <div>
                         <h3 class="font-extrabold text-lg text-slate-800">Иж бүрэн Шалгалт</h3>
-                        <p class="text-xs text-slate-500">Тухайн өдрийн болон 7 хоногийн түвшин тус бүрийн шалгалт</p>
+                        <p class="text-xs text-slate-500">Эхний 30 үг цээжилсний дараа 3 хоног тутамд заавал өгнө</p>
                     </div>
-                    <div class="flex items-center gap-2 flex-wrap justify-end">
-                        <button onclick="startTodayExam()" class="bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-600 text-xs px-3 py-2 rounded-xl font-bold transition">Өнөөдрийн үгсээс шалгах</button>
-                        <button onclick="startWeeklyExam()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-xl font-bold transition">7 хоногийн шалгалт (Түвшин бүрээс 25)</button>
+                    <div class="flex items-center gap-2">
+                        <select id="examScope" class="border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold"><option value="all">Бүх үг</option><option value="today">Өнөөдөр үзсэн</option><option value="week">7 хоногийн үгс</option></select>
+                        <label class="text-xs font-bold text-slate-600">Асуултын тоо:</label>
+                        <input type="number" id="examWordCountInput" value="10" min="5" max="100" class="w-16 px-2 py-1.5 border border-slate-200 rounded-xl text-center font-bold text-sm focus:outline-indigo-500">
+                        <button onclick="startNewExam()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-xl font-bold transition">Эхлүүлэх</button>
                     </div>
                 </div>
 
@@ -382,42 +406,33 @@ INDEX_HTML = '''<!DOCTYPE html>
                         <h3 id="examQuestionText" class="text-2xl font-black text-slate-800">Word</h3>
                     </div>
                     <div id="examOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-                </div>
-
-                <div id="examResultDetailBox" class="hidden flex flex-col gap-4">
-                    <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl text-center">
-                        <h4 class="text-xl font-extrabold text-emerald-800 mb-1" id="examResultTitle">Шалгалт дууслаа!</h4>
-                        <p class="text-sm text-emerald-700" id="examResultScoreText">Таны оноо: 10/10</p>
-                    </div>
-                    <h4 class="font-bold text-sm text-slate-700 mt-2">Алдаа гаргасан үгс (Аль үг дээр алдсаныг харах):</h4>
-                    <div id="examMistakesList" class="flex flex-col gap-2"></div>
-                    <button onclick="switchTab('exam')" class="mt-2 py-3 bg-indigo-600 text-white font-bold rounded-xl">Буцах</button>
+                    <div id="examFeedback" class="text-sm font-bold" aria-live="polite"></div>
                 </div>
 
                 <div id="examHistoryBox" class="flex flex-col gap-4">
                     <h4 class="font-bold text-sm text-slate-700">Шалгалтын түүх & Нийт үнэлгээ</h4>
                     <div id="examHistoryList" class="flex flex-col gap-2"></div>
+                    <div id="examMissedList" class="flex flex-col gap-2"></div>
                 </div>
             </div>
         </section>
 
-        <!-- 4. Wordbook (Жагсаалт хэсэг: Миний үгсийн санд зөвхөн цээжилсэн үгс өдөр тус бүрээр табуудад) -->
+        <!-- 4. Wordbook -->
         <section id="sec-wordbook" class="hidden flex flex-col gap-4">
             <div class="flex items-center justify-between">
-                <h3 class="font-extrabold text-lg text-slate-800">Миний үгсийн сан (Цээжилсэн үгс)</h3>
+                <h3 class="font-extrabold text-lg text-slate-800">Миний үгсийн сан (<span id="wordCount">0</span>)</h3>
                 <button onclick="openBankModal()" class="bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs px-3 py-1.5 rounded-xl font-bold hover:bg-indigo-100 transition">
                     + Нийт үгсийн сангаас авах
                 </button>
             </div>
-            <!-- Tabs for days -->
-            <div id="wordbookDaysTabs" class="flex gap-2 overflow-x-auto pb-2"></div>
+            <div id="wordbookDateTabs" class="flex gap-2 flex-wrap"></div>
             <div id="wordbookList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
         </section>
 
-        <!-- 5. Add Word (Үг нэмэх хэсэг: Зөвхөн нийт үгсийн санд нэмэгдэнэ) -->
+        <!-- 5. Add Word -->
         <section id="sec-add" class="hidden">
             <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm max-w-xl mx-auto flex flex-col gap-4">
-                <h3 class="font-extrabold text-lg text-slate-800">Шинэ үг нэмэх (Нийт үгсийн сан болон бүх хэрэглэгчдэд)</h3>
+                <h3 class="font-extrabold text-lg text-slate-800">Шинэ үг нэмэх</h3>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 mb-1">Англи үг *</label>
                     <div class="flex gap-2">
@@ -440,7 +455,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <input type="text" id="newExample" placeholder="Жишээ: I highly recommend this book." class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-indigo-500">
                 </div>
                 <button onclick="addNewWord()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-100 mt-2">
-                    <i class="fa-solid fa-plus"></i> Нийт үгсийн санд нэмэх
+                    <i class="fa-solid fa-plus"></i> Жагсаалтад нэмэх
                 </button>
             </div>
         </section>
@@ -448,6 +463,7 @@ INDEX_HTML = '''<!DOCTYPE html>
     </main>
 
     <script>
+        // Supabase Тохиргоо (Өөрийн Supabase Project URL болон Anon Key-г энд оруулна уу)
         const SUPABASE_URL = 'https://aopbyjndymjfkvkbxsui.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFvcGJ5am5keW1qZmt2a2J4c3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NzQ5MjcsImV4cCI6MjEwODI1MDkyN30.wvrxumNqdtm4kTKcTp0uP-TdMpZT-mC5j33sCfyqLM0';
         
@@ -467,8 +483,9 @@ INDEX_HTML = '''<!DOCTYPE html>
             );
         }
 
-        const SRS_INTERVALS = [1/24, 1, 3, 7, 14, 30, 60];
+        const SRS_INTERVALS = [1/24, 1, 3, 7, 14, 30, 60]; // 1 цаг, 1, 3, 7, 14, 30, 60 өдөр
 
+        // Түвшин бүрийн 100 түгээмэл үг; нийт 600 үг. Орчуулгыг банкнаас/онлайн толь бичгээс нөхөж болно.
         const levelWordLists = {
           "A1": ["a", "an", "the", "I", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them", "my", "your", "his", "its", "our", "their", "this", "that", "these", "those", "who", "what", "where", "when", "why", "how", "yes", "no", "not", "all", "some", "any", "many", "much", "more", "most", "less", "few", "one", "two", "three", "first", "last", "new", "old", "good", "bad", "big", "small", "long", "short", "high", "low", "hot", "cold", "happy", "sad", "easy", "hard", "right", "wrong", "same", "different", "important", "possible", "able", "can", "could", "will", "would", "should", "must", "may", "go", "come", "get", "make", "do", "have", "be", "say", "see", "know", "think", "want", "need", "like", "love", "work", "play", "eat", "drink", "sleep", "read", "write"],
           "A2": ["about", "above", "across", "after", "against", "along", "among", "around", "before", "behind", "below", "beside", "between", "beyond", "during", "inside", "outside", "near", "next", "onto", "over", "past", "through", "toward", "under", "until", "within", "without", "according", "actually", "advice", "affect", "afford", "agree", "allow", "although", "amount", "appear", "apply", "area", "arrive", "article", "attention", "avoid", "aware", "basic", "believe", "belong", "benefit", "bill", "borrow", "break", "business", "cancel", "career", "cause", "center", "certain", "change", "choice", "choose", "common", "compare", "complete", "condition", "consider", "continue", "control", "correct", "cost", "create", "culture", "customer", "daily", "decide", "decision", "deliver", "depend", "describe", "design", "develop", "die", "difference", "difficult", "direction", "discover", "discuss", "disease", "distance", "divide", "education", "effect", "effort", "either", "else", "empty", "energy", "enjoy", "enough", "enter"],
@@ -478,30 +495,39 @@ INDEX_HTML = '''<!DOCTYPE html>
           "C2": ["abstruse", "accede", "acrimony", "adumbrate", "alacrity", "anathema", "apocryphal", "approbation", "assiduity", "assuage", "attenuate", "avarice", "bellicose", "bombastic", "cacophony", "calumny", "capitulate", "castigate", "chicanery", "churlish", "circumlocution", "cogitation", "commensurate", "compunction", "confluence", "connivance", "consummate", "contumacious", "contravene", "convivial", "credulous", "cupidity", "debilitate", "decorous", "deleterious", "demagogue", "denouement", "desultory", "diatribe", "didactic", "diffidence", "dilatory", "disingenuous", "dissonance", "ebullient", "effervescent", "egregious", "elicit", "emollient", "encomium", "endemic", "enervate", "ephemeral", "epiphany", "equivocation", "erudition", "exacerbate", "excoriate", "exigency", "expatiate", "expeditious", "extol", "fallacious", "fastidious", "fecund", "felicitous", "fervid", "flagrant", "florid", "foment", "fortuitous", "fractious", "fulminate", "garrulous", "grandiloquent", "gratuitous", "harangue", "hegemony", "iconoclast", "immutable", "impecunious", "impertinent", "impetuous", "inchoate", "incipient", "inculcate", "indefatigable", "ineffable", "inexorable", "ingenuous", "inimical", "inscrutable", "insipid", "insolent", "intrepid", "invective", "invidious", "irascible", "laconic", "largesse"]
         };
         
-        const samplePhrases = [
-            { id: 'p1', word: 'take off', translation: 'онгоц хөөрөх, тайлах', example: 'The plane will take off soon.' },
-            { id: 'p2', word: 'give up', translation: 'бууж өгөх', example: 'Never give up on your dreams.' },
-            { id: 'p3', word: 'look forward to', translation: 'тэсэн ядан хүлээх', example: 'I look forward to seeing you.' },
-            { id: 'p4', word: 'turn down', translation: 'чангыг багасгах, татгалзах', example: 'Please turn down the music.' }
-        ];
-
         function makeBankExample(word, level) {
-            return `I encountered the word "${word}" in our English study session.`;
+            // Embedded, offline examples for every built-in vocabulary item.
+            // Quoting the target word keeps examples grammatically valid for mixed parts of speech.
+            const templates = [
+                `I came across the word "${word}" while reading an English article.`,
+                `The teacher asked us to explain the meaning of "${word}".`,
+                `I wrote down "${word}" in my vocabulary notebook.`,
+                `Try to use "${word}" in your own sentence today.`,
+                `She checked a dictionary to understand the word "${word}".`,
+                `We practiced the word "${word}" during our English lesson.`,
+                `He made a flashcard to remember the word "${word}".`,
+                `I can recognize the word "${word}" when I see it in a text.`,
+                `The example helped me understand how the word "${word}" is used.`,
+                `I reviewed "${word}" again so I would remember it tomorrow.`
+            ];
+            const hash = [...word.toLowerCase()].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
+            return templates[hash % templates.length];
         }
 
-        let globalWordBank = Object.entries(levelWordLists).flatMap(([level, words]) =>
+        const core1500Bank = Object.entries(levelWordLists).flatMap(([level, words]) =>
             words.map((word, i) => ({
                 id: `${level.toLowerCase()}_${i+1}`, word, level,
-                translation: ({apple:'Алим', book:'Ном', achieve:'Хүрэх', recommend:'Санал болгох'})[word.toLowerCase()] || '',
-                mnemonic: '', example: makeBankExample(word, level)
+                translation: ({apple:'Алим', book:'Ном', achieve:'Хүрэх, биелүүлэх', recommend:'Санал болгох, зөвлөх'})[word.toLowerCase()] || '',
+                mnemonic: '',
+                example: makeBankExample(word, level)
             }))
         );
 
+
         let currentUserSession = null;
-        let userData = { words: [], phrases: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
+        let userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
         let activeDueWords = [];
         let currentIndex = 0;
-        let flashcardMode = 'word';
         let quizMode = 'en-mn';
         let currentQuizQuestionText = '';
         let currentTargetQuizWord = null;
@@ -509,36 +535,10 @@ INDEX_HTML = '''<!DOCTYPE html>
         let examQuestions = [];
         let examCurrentIdx = 0;
         let examScoreCount = 0;
-        let examCurrentMistakes = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
-            await syncGlobalBankFromCloud();
             await checkAuth();
         });
-
-        async function syncGlobalBankFromCloud() {
-            if (!supabaseClient) return;
-            try {
-                const { data } = await supabaseClient.from('global_word_bank').select('*');
-                if (data && data.length > 0) {
-                    const existingMap = new Map(globalWordBank.map(w => [w.word.toLowerCase(), w]));
-                    data.forEach(item => {
-                        if (existingMap.has(item.word.toLowerCase())) {
-                            Object.assign(existingMap.get(item.word.toLowerCase()), item);
-                        } else {
-                            globalWordBank.push(item);
-                        }
-                    });
-                }
-            } catch (e) { console.error("Global bank sync error:", e); }
-        }
-
-        async function saveWordToGlobalCloud(wordObj) {
-            if (!supabaseClient) return;
-            try {
-                await supabaseClient.from('global_word_bank').upsert([wordObj], { onConflict: 'word' });
-            } catch (e) { console.error("Save global bank error:", e); }
-        }
 
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
@@ -553,7 +553,10 @@ INDEX_HTML = '''<!DOCTYPE html>
         }
 
         async function checkAuth() {
-            if (!supabaseClient) return;
+            if (!supabaseClient) {
+                console.error("Supabase client not initialized.");
+                return;
+            }
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 currentUserSession = session.user;
@@ -593,9 +596,12 @@ INDEX_HTML = '''<!DOCTYPE html>
             }
 
             const userId = data.user.id;
+            const defaultWords = [
+                { id: 1, word: 'recommend', phonetic: '/ˌrek.əˈmend/', translation: 'Санал болгох, зөвлөх', mnemonic: '', example: 'I highly recommend reading this book.', category: '70% Нийтлэг', srsLevel: 0, nextReviewDate: Date.now(), image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300' }
+            ];
+
             const initialAppData = {
-                words: [],
-                phrases: samplePhrases,
+                words: defaultWords,
                 streak: 1,
                 lastExamDate: Date.now(),
                 examHistory: []
@@ -635,65 +641,83 @@ INDEX_HTML = '''<!DOCTYPE html>
 
             if (data) {
                 document.getElementById('currentUserDisplay').innerText = `${data.first_name} (${data.username})`;
-                userData = data.app_data || { words: [], phrases: samplePhrases, streak: 1, lastExamDate: Date.now(), examHistory: [] };
-                if (!userData.phrases) userData.phrases = samplePhrases;
+                userData = data.app_data || { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
             } else {
-                userData = { words: [], phrases: samplePhrases, streak: 1, lastExamDate: Date.now(), examHistory: [] };
+                userData = { words: [], streak: 1, lastExamDate: Date.now(), examHistory: [] };
             }
 
             document.getElementById('streakCount').innerText = userData.streak || 1;
+            checkExamRequirement();
             filterSRSWords();
-            renderWordbookDaysTabs();
+            renderWordbook();
             renderExamHistory();
             initQuiz();
         }
 
         async function saveUserData() {
+            filterSRSWords();
             if (!currentUserSession) return;
+            
             await supabaseClient
                 .from('user_profiles')
                 .update({ app_data: userData, updated_at: new Date() })
                 .eq('id', currentUserSession.id);
         }
 
+        function checkExamRequirement() {
+            const wordCount = userData.words ? userData.words.length : 0;
+            if (wordCount < 30) {
+                document.getElementById('examLockBanner').classList.add('hidden');
+                document.getElementById('examDot').classList.add('hidden');
+                return false;
+            }
+            const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+            const lastExam = userData.lastExamDate || 0;
+            const isLocked = (Date.now() - lastExam) > THREE_DAYS_MS;
+
+            if (isLocked) {
+                document.getElementById('examLockBanner').classList.remove('hidden');
+                document.getElementById('examDot').classList.remove('hidden');
+            } else {
+                document.getElementById('examLockBanner').classList.add('hidden');
+                document.getElementById('examDot').classList.add('hidden');
+            }
+            return isLocked;
+        }
+
         function filterSRSWords() {
             const now = Date.now();
-            const sourceList = flashcardMode === 'word' ? (userData.words || []) : (userData.phrases || []);
-            activeDueWords = sourceList.filter(w => !w.nextReviewDate || w.nextReviewDate <= now);
+            activeDueWords = userData.words.filter(w => !w.nextReviewDate || w.nextReviewDate <= now);
             document.getElementById('dueWordsCount').innerText = activeDueWords.length;
-            document.getElementById('totalWordsCount').innerText = sourceList.length;
+            document.getElementById('totalWordsCount').innerText = userData.words.length;
             currentIndex = 0;
             renderFlashcard();
         }
 
-        function setFlashcardMode(mode) {
-            flashcardMode = mode;
-            document.getElementById('fcModeWord').className = mode === 'word' ? 'px-4 py-2 rounded-xl bg-white text-indigo-600 shadow-sm transition' : 'px-4 py-2 rounded-xl text-slate-600 transition';
-            document.getElementById('fcModePhrase').className = mode === 'phrase' ? 'px-4 py-2 rounded-xl bg-white text-indigo-600 shadow-sm transition' : 'px-4 py-2 rounded-xl text-slate-600 transition';
-            filterSRSWords();
-        }
-
         function srsReview(remembered) {
+            if (checkExamRequirement()) {
+                alert('Та эхний 30 үгээ цээжилж дуусгасан тул 3 хоног тутамд заавал ШАЛГАЛТ өгөх дүрэм идэвхжлээ!');
+                switchTab('exam');
+                return;
+            }
             if (!activeDueWords || activeDueWords.length === 0) return;
             const w = activeDueWords[currentIndex];
             if (remembered) {
                 w.srsLevel = Math.min((w.srsLevel || 0) + 1, SRS_INTERVALS.length - 1);
                 w.lastReviewedAt = Date.now();
                 w.nextReviewDate = Date.now() + (SRS_INTERVALS[w.srsLevel] * 24 * 60 * 60 * 1000);
-                w.learnedDate = w.learnedDate || new Date().toISOString().slice(0, 10);
+                w.reviewStatus = 'scheduled';
             } else {
                 w.srsLevel = 0;
                 w.nextReviewDate = Date.now() + 10 * 60 * 1000;
+                w.reviewStatus = 'again-soon';
             }
             saveUserData();
             filterSRSWords();
-            renderWordbookDaysTabs();
         }
 
-        // Requirement 2: Бүх талбарт засах боломжтой байх
-        function openEditModal(id, isPhrase = false) {
-            const list = isPhrase ? userData.phrases : userData.words;
-            const w = list.find(item => String(item.id) === String(id));
+        function openEditModal(id) {
+            const w = userData.words.find(item => String(item.id) === String(id)) || core1500Bank.find(item => String(item.id) === String(id));
             if (!w) return;
             document.getElementById('editWordId').value = w.id;
             document.getElementById('editWordText').value = w.word;
@@ -703,42 +727,51 @@ INDEX_HTML = '''<!DOCTYPE html>
             document.getElementById('editModal').classList.remove('hidden');
         }
 
-        function openEditModalFromCard() {
-            if (!activeDueWords || activeDueWords.length === 0) return;
-            const w = activeDueWords[currentIndex];
-            openEditModal(w.id, flashcardMode === 'phrase');
-        }
-
         function closeEditModal() {
             document.getElementById('editModal').classList.add('hidden');
         }
 
+
+        async function translateBankWord(id) {
+            const item = core1500Bank.find(x => x.id === id);
+            if (!item) return;
+            try {
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(item.word)}&langpair=en|mn`);
+                if (!response.ok) throw new Error('Орчуулгын үйлчилгээ хариу өгсөнгүй');
+                const data = await response.json();
+                const translated = data?.responseData?.translatedText || '';
+                if (!translated || /MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translated)) {
+                    alert('Орчуулга олдсонгүй. “Засах” товчоор гараар оруулна уу.'); return;
+                }
+                item.translation = translated;
+                renderBankWords();
+            } catch (e) {
+                alert('Орчуулга татаж чадсангүй. Интернэтээ шалгана уу.');
+            }
+        }
+
+        function editBankWord(id) { openEditModal(id); }
+
         function saveEditWord() {
             const id = document.getElementById('editWordId').value;
-            const newWordText = document.getElementById('editWordText').value.trim();
-            const newTransText = document.getElementById('editTranslationText').value.trim();
-            const newMnemText = document.getElementById('editMnemonicText').value.trim();
-            const newExText = document.getElementById('editExampleText').value.trim();
-
-            // Бүх талбарт (Миний үгсийн сан, Нийт үгсийн сан, Картууд) шинэчлэгдэх ёстой
-            [userData.words, userData.phrases, globalWordBank].forEach(collection => {
-                if (!collection) return;
-                collection.forEach(item => {
-                    if (String(item.id) === String(id) || item.word.toLowerCase() === newWordText.toLowerCase()) {
-                        item.word = newWordText;
-                        item.translation = newTransText;
-                        item.mnemonic = newMnemText;
-                        item.example = newExText;
-                    }
-                });
-            });
-
-            saveUserData();
-            filterSRSWords();
-            renderWordbookDaysTabs();
-            renderBankWords();
+            const w = userData.words.find(item => String(item.id) === String(id));
+            const bankWord = core1500Bank.find(item => String(item.id) === String(id));
+            const target = w || bankWord;
+            if (!target) return;
+            target.word = document.getElementById('editWordText').value.trim();
+            target.translation = document.getElementById('editTranslationText').value.trim();
+            target.mnemonic = document.getElementById('editMnemonicText').value.trim();
+            target.example = document.getElementById('editExampleText').value.trim();
+            if (w) {
+                saveUserData(); renderWordbook(); renderFlashcard();
+            } else {
+                userData.customBankWords = core1500Bank.filter(item => String(item.id).startsWith('custom_'));
+                userData.bankOverrides = userData.bankOverrides || {};
+                userData.bankOverrides[String(id)] = { word: target.word, translation: target.translation, mnemonic: target.mnemonic, example: target.example, level: target.level };
+                saveUserData();
+                renderBankWords();
+            }
             closeEditModal();
-            alert('Амжилттай засагдлаа!');
         }
 
         function openBankModal() {
@@ -756,8 +789,15 @@ INDEX_HTML = '''<!DOCTYPE html>
             const container = document.getElementById('bankWordList');
             container.innerHTML = '';
 
-            const filtered = globalWordBank.filter(b => {
-                const matchQ = b.word.toLowerCase().includes(query) || (b.translation && b.translation.toLowerCase().includes(query));
+            const counts = Object.fromEntries(['A1','A2','B1','B2','C1','C2'].map(l => [l, core1500Bank.filter(b => b.level === l).length]));
+            const allOption = document.querySelector('#bankLevelFilter option[value="ALL"]');
+            if (allOption) allOption.textContent = `Бүх түвшин (${core1500Bank.length} үг)`;
+            ['A1','A2','B1','B2','C1','C2'].forEach(l => {
+                const opt = document.querySelector(`#bankLevelFilter option[value="${l}"]`);
+                if (opt) opt.textContent = `${l} (${counts[l]} үг)`;
+            });
+            const filtered = core1500Bank.filter(b => {
+                const matchQ = b.word.toLowerCase().includes(query) || b.translation.toLowerCase().includes(query);
                 const matchL = level === 'ALL' || b.level === level;
                 return matchQ && matchL;
             });
@@ -770,49 +810,43 @@ INDEX_HTML = '''<!DOCTYPE html>
                     <div class="flex items-center gap-3">
                         <div>
                             <div class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                                ${escapeHTML(item.word)} <span class="text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-md font-bold">${item.level || 'A1'}</span>
+                                ${item.word} <span class="text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-700 px-2 py-0.5 rounded-md font-bold">${item.level}</span>
                             </div>
-                            <div class="text-xs text-slate-500 font-medium">${escapeHTML(item.translation || 'Орчуулгагүй')}</div>
+                            <div class="text-xs text-slate-500 font-medium" data-bank-translation="${item.id}">${item.translation || 'Орчуулга татаж байна...'}</div>
                         </div>
                     </div>
-                    <div class="flex gap-2 items-center">
-                        ${isAdded ? `<span class="text-emerald-600 font-bold text-xs">Нэмэгдсэн</span>` : `<button onclick="addFromBank('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Миний санд авах</button>`}
-                        <button onclick="openEditModal('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Засах</button>
-                    </div>
+                    <div class="flex gap-2 items-center">${isAdded ? `<span class="text-emerald-600 font-bold text-xs">Нэмэгдсэн</span>` : `<button onclick="addFromBank('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl">+ Нэмэх</button>`}<button onclick="editBankWord('${item.id}')" class="text-indigo-600 text-xs font-bold px-2 py-1 rounded-lg border">Засах</button></div>
                 `;
                 container.appendChild(div);
             });
+            setupBankTranslationObserver();
         }
 
-        async function addFromBank(bankId) {
-            await syncGlobalBankFromCloud();
-            const bItem = globalWordBank.find(b => String(b.id) === String(bankId));
+        function addFromBank(bankId) {
+            const bItem = core1500Bank.find(b => b.id === bankId);
             if (!bItem) return;
-            if (userData.words.some(w => w.word.toLowerCase() === bItem.word.toLowerCase())) {
-                alert('Энэ үг таны санд аль хэдийн байна.');
-                return;
-            }
             userData.words.push({
-                id: Date.now() + Math.random(),
+                id: Date.now(),
                 word: bItem.word,
                 phonetic: `/${bItem.word.toLowerCase()}/`,
-                translation: bItem.translation || "Орчуулга байхгүй",
-                mnemonic: bItem.mnemonic || '',
-                example: bItem.example || '',
-                category: `CEFR ${bItem.level || 'A1'}`,
+                translation: bItem.translation || "Орчуулга авах шаардлагатай",
+                mnemonic: '',
+                example: bItem.example,
+                category: `CEFR ${bItem.level}`,
                 srsLevel: 0,
                 nextReviewDate: Date.now(),
-                learnedDate: new Date().toISOString().slice(0, 10),
                 image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300'
             });
-            await saveUserData();
+            saveUserData();
             renderBankWords();
-            renderWordbookDaysTabs();
-            filterSRSWords();
-            alert('Амжилттай миний үгсийн санд нэмэгдлээ.');
+            renderWordbook();
         }
 
         function switchTab(tab) {
+            if ((tab === 'flashcards' || tab === 'quiz') && checkExamRequirement()) {
+                alert('Та эхний 30 үгээ цээжилж дуусгасан тул 3 хоног тутамд заавал ШАЛГАЛТ өгөх дүрэм идэвхжлээ!');
+                tab = 'exam';
+            }
             document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => {
                 b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
@@ -824,14 +858,14 @@ INDEX_HTML = '''<!DOCTYPE html>
             activeBtn.classList.remove('text-slate-600');
 
             if (tab === 'quiz') initQuiz();
-            if (tab === 'wordbook') renderWordbookDaysTabs();
+            if (tab === 'wordbook') renderWordbook();
             if (tab === 'exam') renderExamHistory();
         }
 
         function renderFlashcard() {
             if (!activeDueWords || activeDueWords.length === 0) {
                 document.getElementById('cardWord').innerText = "Давтах үг алга";
-                document.getElementById('cardTranslation').innerText = "Өнөөдрийн давтах үгс дууссан байна.";
+                document.getElementById('cardTranslation').innerText = "Дараагийн давталтын цаг болоогүй байна. Нийт үгсийн сангаас үг нэмэх эсвэл дараа дахин орно уу.";
                 return;
             }
             const w = activeDueWords[currentIndex];
@@ -867,96 +901,98 @@ INDEX_HTML = '''<!DOCTYPE html>
         function speakCurrentWord() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].word); }
         function speakCurrentExample() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].example); }
 
-        async function fetchTranslationApi(word) {
-            try {
-                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|mn`);
-                const data = await response.json();
-                return data?.responseData?.translatedText || '';
-            } catch (_) { return ''; }
-        }
-
         async function autoGenerateWordInfo() {
-            const word = document.getElementById('newWord').value.trim().toLowerCase();
-            if (!word) { alert('Эхлээд англи үгээ оруулна уу!'); return; }
+            const wordInput = document.getElementById('newWord').value.trim().toLowerCase();
+            if (!wordInput) { alert('Эхлээд англи үгээ оруулна уу!'); return; }
             const btn = document.getElementById('autoBtn');
             btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Орчуулж байна...';
             try {
-                const translation = await fetchTranslationApi(word);
-                document.getElementById('newTranslation').value = translation || '';
-                document.getElementById('newExample').value = `I like to learn about "${word}".`;
-            } catch (_) {
-                alert('Орчуулга татаж чадсангүй.');
+                const local = core1500Bank.find(x => x.word.toLowerCase() === wordInput && x.translation);
+                let translation = local?.translation || '';
+                if (!translation) {
+                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(wordInput)}&langpair=en|mn`;
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Орчуулгын үйлчилгээ хариу өгсөнгүй');
+                    const data = await response.json();
+                    translation = data?.responseData?.translatedText || '';
+                    if (/MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translation)) translation = '';
+                }
+                document.getElementById('newTranslation').value = translation;
+                try {
+                    const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(wordInput)}`);
+                    const dict = await dictResponse.json();
+                    const meaning = dict?.[0]?.meanings?.[0]?.definitions?.[0];
+                    document.getElementById('newExample').value = meaning?.example || `I often use "${wordInput}" when I speak English.`;
+                    document.getElementById('newMnemonic').value = meaning?.definition || '';
+                } catch (_) {
+                    document.getElementById('newExample').value = `I often use "${wordInput}" when I speak English.`;
+                }
+                if (!translation) alert('Орчуулга автоматаар олдсонгүй. Орчуулгын талбарыг гараар бөглөнө үү.');
+            } catch (err) {
+                alert('Онлайн орчуулга амжилтгүй боллоо. Интернэтээ шалгаад дахин оролдоно уу. ' + err.message);
+                document.getElementById('newExample').value = `I often use "${wordInput}" when I speak English.`;
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Орчуулга';
             }
         }
 
-        // Requirement 3 & 5: Шинэ үг нэмэхэд зөвхөн нийт үгсийн санд нэмэгдэж, бүх хэрэглэгчдэд харагдана
-        async function addNewWord() {
+        function addNewWord() {
             const word = escapeHTML(document.getElementById('newWord').value.trim());
             const translation = escapeHTML(document.getElementById('newTranslation').value.trim());
             const mnemonic = escapeHTML(document.getElementById('newMnemonic').value.trim());
             const example = escapeHTML(document.getElementById('newExample').value.trim());
 
             if (!word || !translation) { alert('Үг болон орчуулгыг заавал бичнэ үү!'); return; }
-            
-            const newBankItem = {
-                id: `custom_${Date.now()}`,
-                word,
-                translation,
-                mnemonic,
+            if (userData.words.some(w => w.word.toLowerCase() === word.toLowerCase())) {
+                alert('⚠️ Энэ үг аль хэдийнэ нэмэгдсэн байна!');
+                return;
+            }
+
+            userData.words.push({
+                id: Date.now(),
+                word: word,
+                phonetic: `/${word.toLowerCase()}/`,
+                translation: translation,
+                mnemonic: mnemonic,
                 example: example || `Example sentence for ${word}.`,
-                level: 'A1'
-            };
+                category: 'Хэрэглэгчийн үг',
+                srsLevel: 0,
+                nextReviewDate: Date.now(),
+                image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300'
+            });
 
-            globalWordBank.unshift(newBankItem);
-            await saveWordToGlobalCloud(newBankItem);
-
-            ['newWord','newTranslation','newMnemonic','newExample'].forEach(id => document.getElementById(id).value = '');
-            alert('✨ Шинэ үг нийт үгсийн санд болон бүх хэрэглэгчдэд амжилттай нэмэгдлээ!');
-            openBankModal();
+            saveUserData();
+            document.getElementById('newWord').value = '';
+            document.getElementById('newTranslation').value = '';
+            document.getElementById('newMnemonic').value = '';
+            document.getElementById('newExample').value = '';
+            alert('✨ Шинэ үг амжилттай нэмэгдлээ!');
+            switchTab('wordbook');
         }
 
         function setQuizMode(mode) {
             quizMode = mode;
-            ['en-mn','mn-en','audio','translate'].forEach(m => {
-                const btnId = m === 'en-mn' ? 'quizModeEnMn' : (m === 'mn-en' ? 'quizModeMnEn' : (m === 'audio' ? 'quizModeAudio' : 'quizModeTranslate'));
-                const btn = document.getElementById(btnId);
-                if (!btn) return;
-                btn.className = m === mode ? 'px-3 py-1.5 rounded-lg bg-white text-indigo-600 shadow-sm' : 'px-3 py-1.5 rounded-lg text-slate-500';
-            });
             initQuiz();
         }
 
         function initQuiz() {
-            activeQuizWords = [...(userData.words || [])];
+            activeQuizWords = [...userData.words];
             document.getElementById('quizContent').classList.remove('hidden');
             document.getElementById('quizCompleted').classList.add('hidden');
-            
-            document.getElementById('standardQuizBox').classList.add('hidden');
-            document.getElementById('audioQuizBox').classList.add('hidden');
-            document.getElementById('translationBox').classList.add('hidden');
-
-            if (quizMode === 'audio') {
-                document.getElementById('audioQuizBox').classList.remove('hidden');
-            } else if (quizMode === 'translate') {
-                document.getElementById('translationBox').classList.remove('hidden');
-            } else {
-                document.getElementById('standardQuizBox').classList.remove('hidden');
-                nextQuizQuestion();
-            }
+            nextQuizQuestion();
         }
 
         function resetQuiz() { initQuiz(); }
 
         function nextQuizQuestion() {
             if (activeQuizWords.length === 0) {
-                document.getElementById('standardQuizBox').classList.add('hidden');
+                document.getElementById('quizContent').classList.add('hidden');
                 document.getElementById('quizCompleted').classList.remove('hidden');
                 return;
             }
             currentTargetQuizWord = activeQuizWords[Math.floor(Math.random() * activeQuizWords.length)];
             const optsContainer = document.getElementById('quizOptions');
+            optsContainer.classList.remove('hidden');
 
             let options = [currentTargetQuizWord];
             while (options.length < Math.min(4, userData.words.length)) {
@@ -965,15 +1001,12 @@ INDEX_HTML = '''<!DOCTYPE html>
             }
             options.sort(() => Math.random() - 0.5);
 
-            document.getElementById('quizQuestionType').innerText = quizMode === 'en-mn' ? 'Англи ➔ Монгол' : 'Монгол ➔ Англи';
-            document.getElementById('quizQuestion').innerText = quizMode === 'en-mn' ? currentTargetQuizWord.word : currentTargetQuizWord.translation;
-            currentQuizQuestionText = currentTargetQuizWord.word;
-
+            document.getElementById('quizQuestion').innerText = currentTargetQuizWord.word;
             optsContainer.innerHTML = '';
             options.forEach(opt => {
                 const btn = document.createElement('button');
                 btn.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition flex items-center justify-between";
-                btn.innerHTML = `<span>${quizMode === 'en-mn' ? opt.translation : opt.word}</span>`;
+                btn.innerHTML = `<span>${opt.translation}</span>`;
                 btn.onclick = () => {
                     if (opt.id === currentTargetQuizWord.id) {
                         btn.className = "p-4 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700 font-bold flex items-center justify-between";
@@ -989,91 +1022,14 @@ INDEX_HTML = '''<!DOCTYPE html>
             });
         }
 
-        // Сорилт: Англи үгийг сонсоод зөв хариултыг сонгох (Автоматаар хэлнэ)
-        function startAudioQuizSession() {
-            if (!userData.words || userData.words.length === 0) {
-                alert('Таны үгсийн сан хоосон байна.');
-                return;
-            }
-            currentTargetQuizWord = userData.words[Math.floor(Math.random() * userData.words.length)];
-            speakText(currentTargetQuizWord.word);
-
-            let options = [currentTargetQuizWord];
-            while (options.length < Math.min(4, userData.words.length)) {
-                const rw = userData.words[Math.floor(Math.random() * userData.words.length)];
-                if (!options.some(o => o.id === rw.id)) options.push(rw);
-            }
-            options.sort(() => Math.random() - 0.5);
-
-            const optGrid = document.getElementById('audioQuizOptions');
-            optGrid.classList.remove('hidden');
-            optGrid.innerHTML = '';
-            options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition";
-                btn.innerText = opt.translation;
-                btn.onclick = () => {
-                    if (opt.id === currentTargetQuizWord.id) {
-                        alert('Зөв хариуллаа! 🎉');
-                        startAudioQuizSession();
-                    } else {
-                        alert('Буруу байна, дахин сонсоно уу.');
-                        speakText(currentTargetQuizWord.word);
-                    }
-                };
-                optGrid.appendChild(btn);
-            });
-        }
-
-        // Сорилт: Орчуулга хийх хэсэг (Дурын текст, дууны үг орчуулах)
-        async function performTextTranslation() {
-            const txt = document.getElementById('translateInputText').value.trim();
-            if (!txt) { alert('Орчуулах текстээ оруулна уу.'); return; }
-            const out = document.getElementById('translateResultOutput');
-            out.innerText = 'Орчуулж байна...';
-            try {
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(txt)}&langpair=en|mn`);
-                const data = await res.json();
-                out.innerText = data?.responseData?.translatedText || 'Орчуулга гарсангүй.';
-            } catch (_) {
-                out.innerText = 'Орчуулга хийхэд алдаа гарлаа.';
-            }
-        }
-
-        // Шалгалт: Тухайн өдөрт үзсэн бүх үгээс шалгалт авах
-        function startTodayExam() {
-            const today = new Date().toISOString().slice(0, 10);
-            const todaysWords = (userData.words || []).filter(w => w.learnedDate === today);
-            if (todaysWords.length === 0) {
-                alert('Өнөөдөр цээжилсэн үг байхгүй байна. Бүх үгсээс шалгалт авъя.');
-                startCustomExam(userData.words);
-                return;
-            }
-            startCustomExam(todaysWords);
-        }
-
-        // Шалгалт: 7 хоногт үзсэн бүх үгээс, түвшин бүрээс 25 үгээр шалгалт авах
-        function startWeeklyExam() {
-            let pool = [];
-            ['A1','A2','B1','B2','C1','C2'].forEach(lvl => {
-                const lvlWords = (userData.words || []).filter(w => w.category && w.category.includes(lvl));
-                const shuffled = [...lvlWords].sort(() => Math.random() - 0.5).slice(0, 25);
-                pool.push(...shuffled);
-            });
-            if (pool.length === 0) pool = [...(userData.words || [])];
-            if (pool.length === 0) { alert('Үгсийн сан хоосон байна!'); return; }
-            startCustomExam(pool.slice(0, 100));
-        }
-
-        function startCustomExam(wordList) {
-            if (!wordList || wordList.length === 0) { alert('Шалгалт авах үг олдсонгүй!'); return; }
-            examQuestions = [...wordList].sort(() => Math.random() - 0.5);
+        function startNewExam() {
+            if (!userData.words || userData.words.length === 0) { alert('Үгсийн сан хоосон байна!'); return; }
+            const requestedCount = Math.max(5, Math.min(100, parseInt(document.getElementById('examWordCountInput').value, 10) || 10));
+            examQuestions = [...userData.words].sort(() => Math.random() - 0.5).slice(0, requestedCount);
             examCurrentIdx = 0;
             examScoreCount = 0;
-            examCurrentMistakes = [];
             document.getElementById('examActiveBox').classList.remove('hidden');
             document.getElementById('examHistoryBox').classList.add('hidden');
-            document.getElementById('examResultDetailBox').classList.add('hidden');
             renderExamQuestion();
         }
 
@@ -1084,8 +1040,6 @@ INDEX_HTML = '''<!DOCTYPE html>
             }
             const q = examQuestions[examCurrentIdx];
             document.getElementById('examQNum').innerText = examCurrentIdx + 1;
-            document.getElementById('examTotalQ').innerText = examQuestions.length;
-            document.getElementById('examScore').innerText = examScoreCount;
             document.getElementById('examQuestionText').innerText = q.word;
 
             let opts = [q];
@@ -1102,12 +1056,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                 btn.className = "p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition";
                 btn.innerText = opt.translation;
                 btn.onclick = () => {
-                    if (opt.id === q.id) {
-                        examScoreCount++;
-                    } else {
-                        // Аль үг дээр алдсаныг бүртгэх
-                        examCurrentMistakes.push({ word: q.word, correctTranslation: q.translation, selectedTranslation: opt.translation });
-                    }
+                    if (opt.id === q.id) examScoreCount++;
                     examCurrentIdx++;
                     renderExamQuestion();
                 };
@@ -1117,32 +1066,19 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         function finishExam() {
             document.getElementById('examActiveBox').classList.add('hidden');
-            document.getElementById('examResultDetailBox').classList.remove('hidden');
+            document.getElementById('examHistoryBox').classList.remove('hidden');
             const percent = Math.round((examScoreCount / examQuestions.length) * 100);
             
-            document.getElementById('examResultTitle').innerText = `Шалгалт дууслаа! Үнэлгээ: ${percent}%`;
-            document.getElementById('examResultScoreText').innerText = `Оноо: ${examScoreCount} / ${examQuestions.length}`;
-
-            const mistakesContainer = document.getElementById('examMistakesList');
-            mistakesContainer.innerHTML = '';
-            if (examCurrentMistakes.length === 0) {
-                mistakesContainer.innerHTML = `<div class="text-xs text-emerald-600 font-bold">Баяр хүргэе! Та ямар ч алдаа гаргасангүй.</div>`;
-            } else {
-                examCurrentMistakes.forEach(m => {
-                    const div = document.createElement('div');
-                    div.className = "bg-rose-50 border border-rose-200 p-3 rounded-xl text-xs flex justify-between items-center text-slate-700 font-semibold";
-                    div.innerHTML = `<span>Англи үг: <b>${m.word}</b></span> <span>Зөв утга: ${m.correctTranslation}</span>`;
-                    mistakesContainer.appendChild(div);
-                });
-            }
-
             userData.examHistory.unshift({
                 date: new Date().toLocaleString(),
                 score: `${examScoreCount}/${examQuestions.length}`,
-                percent: `${percent}%`
+                percent: `${percent}%`,
+                grade: percent >= 90 ? 'A' : percent >= 80 ? 'B' : percent >= 70 ? 'C' : 'D'
             });
+            userData.lastExamDate = Date.now();
             saveUserData();
             renderExamHistory();
+            alert(`Шалгалт дууслаа! Үнэлгээ: ${percent}%`);
         }
 
         function renderExamHistory() {
@@ -1160,67 +1096,693 @@ INDEX_HTML = '''<!DOCTYPE html>
             });
         }
 
-        // Requirement 4: Жагсаалт хэсгийн Миний үгсийн санд зөвхөн цээжилсэн үгсийг өдөр тус бүрээр таб хэлбэрээр харуулах
-        function renderWordbookDaysTabs() {
-            const learnedWords = (userData.words || []).filter(w => (w.srsLevel || 0) > 0 && w.learnedDate);
-            document.getElementById('wordCount') && (document.getElementById('wordCount').innerText = learnedWords.length);
-            
-            const daysMap = {};
-            learnedWords.forEach(w => {
-                daysMap[w.learnedDate] = daysMap[w.learnedDate] || [];
-                daysMap[w.learnedDate].push(w);
-            });
-
-            const dates = Object.keys(daysMap).sort().reverse();
-            const tabsContainer = document.getElementById('wordbookDaysTabs');
-            tabsContainer.innerHTML = '';
-
-            if (dates.length === 0) {
-                document.getElementById('wordbookList').innerHTML = `<div class="col-span-2 text-center text-xs text-slate-400 italic py-6">Цээжилсэн үг одоогоор байхгүй байна. Картаас "Цээжилсэн" товч дарж цээжлээрэй.</div>`;
-                return;
-            }
-
-            dates.forEach((dateStr, idx) => {
-                const btn = document.createElement('button');
-                btn.className = `px-4 py-2 rounded-xl text-xs font-bold transition ${idx === 0 ? 'bg-indigo-600 text-white shadow' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`;
-                btn.innerText = `${dateStr} (${daysMap[dateStr].length} үг)`;
-                btn.onclick = () => {
-                    document.querySelectorAll('#wordbookDaysTabs button').forEach(b => b.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition');
-                    btn.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow transition';
-                    renderWordbookCards(daysMap[dateStr]);
-                };
-                tabsContainer.appendChild(btn);
-            });
-
-            renderWordbookCards(daysMap[dates[0]]);
-        }
-
-        function renderWordbookCards(wordsArr) {
+        function renderWordbook() {
+            if (!userData.words) return;
+            document.getElementById('wordCount').innerText = userData.words.length;
             const container = document.getElementById('wordbookList');
             container.innerHTML = '';
-            wordsArr.forEach(w => {
+            userData.words.forEach(w => {
                 const card = document.createElement('div');
                 card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3";
                 card.innerHTML = `
                     <div>
-                        <h4 class="font-extrabold text-slate-800 text-base">${escapeHTML(w.word)} <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md">Цээжилсэн</span></h4>
-                        <p class="text-xs text-slate-500 font-medium">${escapeHTML(w.translation || '')}</p>
-                        ${w.example ? `<p class="text-xs text-slate-500 mt-1 italic">"${escapeHTML(w.example)}"</p>` : ''}
+                        <h4 class="font-extrabold text-slate-800 text-base">${w.word} <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md">${w.level || (w.category || 'Үг')}</span></h4>
+                        <p class="text-xs text-slate-500 font-medium">${w.translation || 'Орчуулга хараахан оруулаагүй'}</p>
+                        ${w.example ? `<p class="text-xs text-slate-500 mt-1 italic">${w.example}</p>` : ''}
+                        <p class="text-[10px] text-emerald-600 mt-1 font-bold">${(w.srsLevel || 0) > 0 ? 'Цээжилсэн / давталтын хуваарьтай' : 'Давтаж цээжлэх жагсаалтад'}</p>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button onclick="openEditModal(${w.id})" class="text-slate-400 hover:text-indigo-600 p-2" title="Засах"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteWord(${w.id})" class="text-slate-300 hover:text-rose-500 p-2" title="Устгах"><i class="fa-solid fa-trash-can"></i></button>
+                        <button onclick="openEditModal(${w.id})" class="text-slate-400 hover:text-indigo-600 p-2"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteWord(${w.id})" class="text-slate-300 hover:text-rose-500 p-2"><i class="fa-solid fa-trash-can"></i></button>
                     </div>`;
                 container.appendChild(card);
             });
         }
 
         function deleteWord(id) {
-            userData.words = userData.words.filter(w => String(w.id) !== String(id));
+            userData.words = userData.words.filter(w => w.id !== id);
             saveUserData();
-            renderWordbookDaysTabs();
-            filterSRSWords();
+            renderWordbook();
+            renderFlashcard();
         }
+
+        // --- VocabPulse enhancements ---
+        const TRANSLATION_CACHE_KEY = 'vocabulpulse_translation_cache_v1';
+        const LEVELS = ['A1','A2','B1','B2','C1','C2'];
+        let letterTarget = '';
+        let letterSelected = [];
+        let letterAvailable = [];
+        let translationObserver = null;
+        let dailyWordCount = 5;
+
+        function getTranslationCache() {
+            try { return JSON.parse(localStorage.getItem(TRANSLATION_CACHE_KEY) || '{}'); }
+            catch (_) { return {}; }
+        }
+        function setCachedTranslation(word, translation) {
+            const cache = getTranslationCache();
+            cache[word.toLowerCase()] = { translation, savedAt: Date.now() };
+            try { localStorage.setItem(TRANSLATION_CACHE_KEY, JSON.stringify(cache)); } catch (_) {}
+        }
+        async function fetchTranslation(word) {
+            const cache = getTranslationCache();
+            if (cache[word.toLowerCase()]?.translation) return cache[word.toLowerCase()].translation;
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|mn`);
+            if (!response.ok) throw new Error('Translation service unavailable');
+            const data = await response.json();
+            const translated = (data?.responseData?.translatedText || '').replace(/&amp;/g,'&').replace(/&#39;/g,"'");
+            if (!translated || /MYMEMORY WARNING|PLEASE SELECT|QUERY LENGTH/i.test(translated)) return '';
+            setCachedTranslation(word, translated);
+            return translated;
+        }
+        function setupBankTranslationObserver() {
+            if (translationObserver) translationObserver.disconnect();
+            const container = document.getElementById('bankWordList');
+            if (!container) return;
+            const translateNode = async node => {
+                if (node.dataset.translationStarted === '1') return;
+                node.dataset.translationStarted = '1';
+                const item = core1500Bank.find(x => String(x.id) === String(node.dataset.bankTranslation));
+                if (!item || item.translation) { node.textContent = item?.translation || ''; return; }
+                try {
+                    const translation = await fetchTranslation(item.word);
+                    if (translation) {
+                        item.translation = translation;
+                        node.textContent = translation;
+                    } else node.textContent = 'Орчуулга олдсонгүй';
+                } catch (_) { node.textContent = 'Орчуулга түр боломжгүй'; }
+            };
+            if ('IntersectionObserver' in window) {
+                translationObserver = new IntersectionObserver(entries => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            translateNode(entry.target);
+                            translationObserver.unobserve(entry.target);
+                        }
+                    });
+                }, { root: container, rootMargin: '120px' });
+                container.querySelectorAll('[data-bank-translation]').forEach(node => {
+                    if (!node.textContent.trim() || node.textContent.includes('Орчуулга татаж')) translationObserver.observe(node);
+                });
+            } else {
+                container.querySelectorAll('[data-bank-translation]').forEach(translateNode);
+            }
+        }
+
+        // Replace the original bank renderer: translations load on demand while scrolling.
+        const originalRenderBankWords = renderBankWords;
+        renderBankWords = function() {
+            originalRenderBankWords();
+            setupBankTranslationObserver();
+        };
+
+        function classifyLevel(word) {
+            const w = word.toLowerCase();
+            for (const level of LEVELS) {
+                if (levelWordLists[level].some(x => x.toLowerCase() === w)) return level;
+            }
+            // Estimate level by length when a custom word is not in the built-in CEFR lists.
+            if (w.length <= 4) return 'A1';
+            if (w.length <= 6) return 'A2';
+            if (w.length <= 8) return 'B1';
+            if (w.length <= 10) return 'B2';
+            if (w.length <= 12) return 'C1';
+            return 'C2';
+        }
+        function addCustomWordToBank(word, translation, mnemonic, example) {
+            const level = classifyLevel(word);
+            let existing = core1500Bank.find(x => x.word.toLowerCase() === word.toLowerCase());
+            if (existing) {
+                existing.translation = translation || existing.translation;
+                existing.mnemonic = mnemonic || existing.mnemonic;
+                existing.example = example || existing.example;
+                existing.level = level;
+            } else {
+                existing = { id: `custom_${Date.now()}_${Math.random().toString(36).slice(2,7)}`, word, level,
+                    translation: translation || '', mnemonic: mnemonic || '', example: example || makeBankExample(word, level) };
+                core1500Bank.unshift(existing);
+            }
+            userData.customBankWords = core1500Bank.filter(x => String(x.id).startsWith('custom_'));
+        }
+
+        // Preserve custom bank entries across login sessions.
+        const originalLoadUserDataFromCloud = loadUserDataFromCloud;
+        loadUserDataFromCloud = async function() {
+            await originalLoadUserDataFromCloud();
+            const saved = userData.customBankWords || [];
+            saved.forEach(savedWord => {
+                if (!core1500Bank.some(x => String(x.id) === String(savedWord.id))) core1500Bank.unshift(savedWord);
+            });
+            Object.entries(userData.bankOverrides || {}).forEach(([id, values]) => {
+                const item = core1500Bank.find(x => String(x.id) === String(id));
+                if (item) Object.assign(item, values);
+            });
+            dailyWordCount = Math.max(1, Math.min(50, Number(userData.dailyWordCount) || 5));
+            const setting = document.getElementById('dailyWordCount');
+            if (setting) setting.value = dailyWordCount;
+            await addDailyWordsIfNeeded(false);
+        };
+
+        async function saveDailyWordSetting(addToday = false) {
+            const input = document.getElementById('dailyWordCount');
+            dailyWordCount = Math.max(1, Math.min(50, parseInt(input.value, 10) || 5));
+            input.value = dailyWordCount;
+            userData.dailyWordCount = dailyWordCount;
+            await saveUserData();
+            await addDailyWordsIfNeeded(addToday);
+            alert(`Өдөр бүр түвшин тус бүрээс ${dailyWordCount} үг нэмэх тохиргоо хадгалагдлаа.`);
+        }
+        async function addDailyWordsIfNeeded(force = false) {
+            if (!currentUserSession || !userData) return;
+            const today = new Date().toISOString().slice(0,10);
+            const count = Math.max(1, Math.min(50, Number(userData.dailyWordCount) || dailyWordCount || 5));
+            if (!force && userData.lastDailyWordDate === today) return;
+            const existing = new Set((userData.words || []).map(w => w.word.toLowerCase()));
+            let added = 0;
+            for (const level of LEVELS) {
+                const candidates = core1500Bank.filter(b => b.level === level && !existing.has(b.word.toLowerCase()))
+                    .sort(() => Math.random() - 0.5).slice(0, count);
+                for (const b of candidates) {
+                    let translation = b.translation || '';
+                    if (!translation) {
+                        try { translation = await fetchTranslation(b.word); } catch (_) {}
+                        if (translation) b.translation = translation;
+                    }
+                    if (existing.has(b.word.toLowerCase())) continue;
+                    userData.words.push({ id: Date.now() + Math.random(), word: b.word, phonetic: `/${b.word.toLowerCase()}/`,
+                        translation: translation || 'Орчуулга хараахан олдоогүй', mnemonic: b.mnemonic || '',
+                        example: b.example || makeBankExample(b.word, b.level), category: `CEFR ${level}`,
+                        level, srsLevel: 0, nextReviewDate: Date.now(),
+                        image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300' });
+                    existing.add(b.word.toLowerCase()); added++;
+                }
+            }
+            userData.lastDailyWordDate = today;
+            userData.dailyWordCount = count;
+            if (added) {
+                await saveUserData();
+                filterSRSWords(); renderWordbook();
+            } else if (force) {
+                alert('Таны үгсийн санд байгаа үгсийг давхар нэмсэнгүй. Нэмэх шинэ үг үлдээгүй байж болно.');
+            }
+        }
+
+        // New words are saved both to the learner's list and the shared-in-app bank.
+        addNewWord = async function() {
+            const word = document.getElementById('newWord').value.trim();
+            let translation = document.getElementById('newTranslation').value.trim();
+            const mnemonic = document.getElementById('newMnemonic').value.trim();
+            const example = document.getElementById('newExample').value.trim();
+            if (!word) { alert('Англи үгээ оруулна уу.'); return; }
+            if (userData.words.some(w => w.word.toLowerCase() === word.toLowerCase())) {
+                alert('Энэ үг таны жагсаалтад аль хэдийн байна.'); return;
+            }
+            if (!translation) {
+                try { translation = await fetchTranslation(word); } catch (_) {}
+            }
+            if (!translation) { alert('Орчуулга олдсонгүй. Орчуулгыг гараар оруулна уу.'); return; }
+            addCustomWordToBank(word, translation, mnemonic, example);
+            userData.words.push({ id: Date.now(), word, phonetic: `/${word.toLowerCase()}/`, translation, mnemonic,
+                example: example || makeBankExample(word, level), category: `CEFR ${classifyLevel(word)}`,
+                level: classifyLevel(word), srsLevel: 0, nextReviewDate: Date.now(),
+                image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300' });
+            await saveUserData();
+            ['newWord','newTranslation','newMnemonic','newExample'].forEach(id => document.getElementById(id).value = '');
+            filterSRSWords(); renderWordbook(); renderBankWords();
+            alert('Шинэ үг таны жагсаалт болон нийт үгсийн санд хадгалагдлаа.');
+            switchTab('wordbook');
+        };
+
+        // Auto-translate when adding a bank word, without requiring a per-word button.
+        addFromBank = async function(bankId) {
+            const item = core1500Bank.find(b => String(b.id) === String(bankId));
+            if (!item) return;
+            if (userData.words.some(w => w.word.toLowerCase() === item.word.toLowerCase())) {
+                alert('Энэ үг таны жагсаалтад аль хэдийн байна.'); return;
+            }
+            let translation = item.translation || '';
+            if (!translation) {
+                try { translation = await fetchTranslation(item.word); } catch (_) {}
+                if (translation) item.translation = translation;
+            }
+            userData.words.push({ id: Date.now() + Math.random(), word: item.word, phonetic: `/${item.word.toLowerCase()}/`,
+                translation: translation || 'Орчуулга хараахан олдоогүй', mnemonic: item.mnemonic || '',
+                example: item.example || makeBankExample(item.word, item.level), category: `CEFR ${item.level}`,
+                level: item.level, srsLevel: 0, nextReviewDate: Date.now(),
+                image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300' });
+            await saveUserData(); renderBankWords(); renderWordbook(); filterSRSWords();
+        };
+
+        // Quiz supports both original multiple-choice directions and letter completion.
+        setQuizMode = function(mode) {
+            quizMode = mode;
+            ['en-mn','mn-en','fill'].forEach(m => {
+                const id = m === 'en-mn' ? 'quizModeEnMn' : (m === 'mn-en' ? 'quizModeMnEn' : 'quizModeFill');
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.className = m === mode ? 'px-3 py-1.5 rounded-lg bg-white text-indigo-600 shadow-sm' : 'px-3 py-1.5 rounded-lg text-slate-500';
+            });
+            initQuiz();
+        };
+        initQuiz = function() {
+            activeQuizWords = [...(userData.words || [])].filter(w => w.word && w.translation);
+            document.getElementById('quizContent').classList.remove('hidden');
+            document.getElementById('quizCompleted').classList.add('hidden');
+            const isFill = quizMode === 'fill';
+            document.getElementById('quizOptions').classList.toggle('hidden', isFill);
+            document.getElementById('letterQuiz').classList.toggle('hidden', !isFill);
+            nextQuizQuestion();
+        };
+        nextQuizQuestion = function() {
+            if (!activeQuizWords.length) {
+                document.getElementById('quizContent').classList.add('hidden');
+                document.getElementById('quizCompleted').classList.remove('hidden');
+                return;
+            }
+            currentTargetQuizWord = activeQuizWords[Math.floor(Math.random() * activeQuizWords.length)];
+            const isFill = quizMode === 'fill';
+            document.getElementById('quizQuestionAudio').classList.toggle('hidden', quizMode !== 'en-mn');
+            document.getElementById('quizOptions').classList.toggle('hidden', isFill);
+            document.getElementById('letterQuiz').classList.toggle('hidden', !isFill);
+            if (isFill) {
+                letterTarget = currentTargetQuizWord.word.toLowerCase();
+                letterSelected = [letterTarget[0]];
+                letterAvailable = letterTarget.slice(1).split('').sort(() => Math.random() - .5);
+                document.getElementById('quizQuestionType').textContent = 'Эхний үсгээр үг нөхөх';
+                document.getElementById('quizQuestion').textContent = currentTargetQuizWord.translation || 'Орчуулга байхгүй';
+                document.getElementById('letterSentence').textContent = (currentTargetQuizWord.example || makeBankExample(letterTarget, currentTargetQuizWord.level || 'A1')).replace(new RegExp(letterTarget, 'ig'), '________');
+                document.getElementById('letterFeedback').textContent = '';
+                renderLetterChoices();
+                return;
+            }
+            document.getElementById('quizQuestionType').textContent = quizMode === 'en-mn' ? 'Англи ➔ Монгол' : 'Монгол ➔ Англи';
+            document.getElementById('quizQuestion').textContent = quizMode === 'en-mn' ? currentTargetQuizWord.word : currentTargetQuizWord.translation;
+            currentQuizQuestionText = currentTargetQuizWord.word;
+            const optsContainer = document.getElementById('quizOptions');
+            const options = [currentTargetQuizWord];
+            const pool = userData.words.filter(w => w.id !== currentTargetQuizWord.id);
+            pool.sort(() => Math.random() - .5);
+            options.push(...pool.slice(0, 3));
+            options.sort(() => Math.random() - .5);
+            optsContainer.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700 transition';
+                btn.textContent = quizMode === 'en-mn' ? opt.translation : opt.word;
+                btn.onclick = () => {
+                    if (opt.id === currentTargetQuizWord.id) {
+                        btn.className = 'p-4 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700 font-bold';
+                        setTimeout(() => { activeQuizWords = activeQuizWords.filter(w => w.id !== currentTargetQuizWord.id); nextQuizQuestion(); }, 450);
+                    } else {
+                        btn.className = 'p-4 rounded-xl border border-rose-500 bg-rose-50 text-rose-700 font-bold';
+                    }
+                };
+                optsContainer.appendChild(btn);
+            });
+        };
+
+        function renderLetterChoices() {
+            const answer = document.getElementById('letterAnswer');
+            const choices = document.getElementById('letterChoices');
+            answer.innerHTML = ''; choices.innerHTML = '';
+            letterSelected.forEach((ch, i) => {
+                const span = document.createElement('span');
+                span.className = 'w-9 h-10 rounded-lg border-2 border-indigo-300 bg-indigo-50 flex items-center justify-center font-black text-lg';
+                span.textContent = ch; answer.appendChild(span);
+            });
+            letterAvailable.forEach((ch, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-9 h-10 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 font-black text-lg';
+                btn.textContent = ch;
+                btn.onclick = () => {
+                    letterSelected.push(ch); letterAvailable.splice(i,1); renderLetterChoices();
+                    if (letterSelected.join('') === letterTarget) {
+                        document.getElementById('letterFeedback').textContent = 'Зөв! Дараагийн үг рүү шилжинэ.';
+                        document.getElementById('letterFeedback').className = 'text-sm font-bold text-emerald-600';
+                        setTimeout(() => { activeQuizWords = activeQuizWords.filter(w => w.id !== currentTargetQuizWord.id); nextQuizQuestion(); }, 700);
+                    } else if (!letterTarget.startsWith(letterSelected.join(''))) {
+                        document.getElementById('letterFeedback').textContent = 'Үсгийн дараалал буруу байна. Буцааж эсвэл дахин оролдоно уу.';
+                        document.getElementById('letterFeedback').className = 'text-sm font-bold text-rose-600';
+                    }
+                };
+                choices.appendChild(btn);
+            });
+        }
+        function undoLetter() {
+            if (letterSelected.length > 1) letterAvailable.push(letterSelected.pop());
+            document.getElementById('letterFeedback').textContent = '';
+            renderLetterChoices();
+        }
+        function resetLetters() {
+            letterSelected = [letterTarget[0]];
+            letterAvailable = letterTarget.slice(1).split('').sort(() => Math.random() - .5);
+            document.getElementById('letterFeedback').textContent = '';
+            renderLetterChoices();
+        }
+
+        // Use translation cache for manual word-info generation too.
+        const originalAutoGenerateWordInfo = autoGenerateWordInfo;
+        autoGenerateWordInfo = async function() {
+            const word = document.getElementById('newWord').value.trim().toLowerCase();
+            if (!word) { alert('Эхлээд англи үгээ оруулна уу!'); return; }
+            const btn = document.getElementById('autoBtn');
+            btn.disabled = true; btn.textContent = 'Орчуулж байна...';
+            try {
+                const translation = await fetchTranslation(word);
+                if (translation) document.getElementById('newTranslation').value = translation;
+                const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+                const dict = await dictResponse.json();
+                const meaning = dict?.[0]?.meanings?.[0]?.definitions?.[0];
+                document.getElementById('newExample').value = meaning?.example || `I often use "${word}" when I speak English.`;
+                document.getElementById('newMnemonic').value = meaning?.definition || '';
+                if (!translation) alert('Орчуулга олдсонгүй. Гараар оруулна уу.');
+            } catch (_) { alert('Орчуулга татаж чадсангүй. Интернэт холболтоо шалгана уу.'); }
+            finally { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Орчуулга'; }
+        };
+
+        // Requested improvements: keep authentication UI/flow unchanged.
+        let flashcardMode = 'words';
+        let selectedWordbookDate = 'all';
+        let listeningQueue = [];
+        let listeningTarget = null;
+
+        const _saveUserDataOriginal = saveUserData;
+        saveUserData = async function() {
+            userData.updatedAt = Date.now();
+            await _saveUserDataOriginal();
+        };
+
+        const _loadCloudOriginal = loadUserDataFromCloud;
+        loadUserDataFromCloud = async function() {
+            await _loadCloudOriginal();
+            userData.words = Array.isArray(userData.words) ? userData.words : [];
+            userData.examHistory = Array.isArray(userData.examHistory) ? userData.examHistory : [];
+            userData.learnedHistory = userData.learnedHistory || {};
+            userData.viewedHistory = userData.viewedHistory || {};
+            userData.phrases = userData.phrases || [];
+            await loadSharedBankWords();
+            renderWordbook();
+            renderPhraseList();
+            renderExamHistory();
+        };
+
+        async function loadSharedBankWords() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient.from('shared_vocabulary').select('*').order('created_at', {ascending:false});
+                if (error) { console.warn('Shared vocabulary table is not configured:', error.message); return; }
+                (data || []).forEach(row => {
+                    const item = { id: String(row.id), word: row.word, translation: row.translation || '',
+                        mnemonic: row.mnemonic || '', example: row.example || '', level: row.level || classifyLevel(row.word),
+                        category: 'Нийтийн сан' };
+                    const old = core1500Bank.find(x => x.word.toLowerCase() === item.word.toLowerCase());
+                    if (old) Object.assign(old, item, {id: old.id});
+                    else core1500Bank.unshift(item);
+                });
+                renderBankWords();
+            } catch (e) { console.warn('Shared vocabulary load failed', e); }
+        }
+
+        async function upsertSharedWord(word, translation, mnemonic, example, level) {
+            if (!supabaseClient) throw new Error('Cloud холболт алга.');
+            const payload = { word, translation, mnemonic: mnemonic || '', example: example || '', level: level || classifyLevel(word),
+                created_by: currentUserSession?.id || null };
+            const { data, error } = await supabaseClient.from('shared_vocabulary').upsert(payload, {onConflict:'word'}).select().single();
+            if (error) throw error;
+            return data;
+        }
+
+        function setFlashcardMode(mode) {
+            flashcardMode = mode;
+            document.getElementById('wordFlashcardPanel').classList.toggle('hidden', mode !== 'words');
+            document.getElementById('phrasePanel').classList.toggle('hidden', mode !== 'phrases');
+            document.getElementById('flashModeWords').className = mode === 'words' ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold' : 'px-4 py-2 rounded-xl bg-slate-200 text-slate-700 text-xs font-bold';
+            document.getElementById('flashModePhrases').className = mode === 'phrases' ? 'px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold' : 'px-4 py-2 rounded-xl bg-slate-200 text-slate-700 text-xs font-bold';
+            renderPhraseList();
+        }
+        async function savePhrase() {
+            const english = document.getElementById('phraseEnglish').value.trim();
+            const mongolian = document.getElementById('phraseMongolian').value.trim();
+            if (!english || !mongolian) return alert('Англи холбоо үг болон монгол утгыг бөглөнө үү.');
+            userData.phrases = userData.phrases || [];
+            userData.phrases.push({id: Date.now(), english, mongolian, createdAt: Date.now()});
+            await saveUserData();
+            document.getElementById('phraseEnglish').value = '';
+            document.getElementById('phraseMongolian').value = '';
+            renderPhraseList();
+        }
+        function renderPhraseList() {
+            const box = document.getElementById('phraseList'); if (!box) return;
+            box.innerHTML = '';
+            (userData.phrases || []).forEach(p => {
+                const row = document.createElement('div');
+                row.className = 'p-3 border rounded-xl flex justify-between gap-3';
+                const label = document.createElement('div');
+                label.innerHTML = `<b>${escapeHTML(p.english)}</b><div class="text-sm text-slate-500">${escapeHTML(p.mongolian)}</div>`;
+                const speak = document.createElement('button');
+                speak.className = 'text-indigo-600'; speak.textContent = '🔊 Сонсох'; speak.onclick = () => speakText(p.english);
+                row.append(label, speak); box.appendChild(row);
+            });
+        }
+
+        function showQuizTool(mode) {
+            const listen = document.getElementById('listenPanel'), trans = document.getElementById('translatePanel');
+            const content = document.getElementById('quizContent');
+            listen.classList.toggle('hidden', mode !== 'listen');
+            trans.classList.toggle('hidden', mode !== 'translate');
+            content.classList.toggle('hidden', mode !== 'quiz');
+            document.getElementById('quizCompleted').classList.add('hidden');
+        }
+        function startListeningQuiz() {
+            listeningQueue = [...(userData.words || [])].filter(w => w.word && w.translation);
+            if (!listeningQueue.length) return alert('Сонсох сорилтод ашиглах үг алга.');
+            listeningQueue.sort(() => Math.random() - .5);
+            nextListeningQuestion();
+        }
+        function nextListeningQuestion() {
+            const box = document.getElementById('listenOptions');
+            if (!listeningQueue.length) {
+                document.getElementById('listenPrompt').textContent = 'Бүх үгийг дуусгалаа!';
+                box.innerHTML = ''; return;
+            }
+            listeningTarget = listeningQueue.shift();
+            document.getElementById('listenPrompt').textContent = 'Сонсож, зөв орчуулгыг сонгоно уу.';
+            speakText(listeningTarget.word);
+            const options = [listeningTarget];
+            const pool = (userData.words || []).filter(w => w.id !== listeningTarget.id).sort(() => Math.random()-.5);
+            options.push(...pool.slice(0,3)); options.sort(() => Math.random()-.5);
+            box.innerHTML = '';
+            options.forEach(opt => {
+                const b = document.createElement('button');
+                b.className = 'p-4 border rounded-xl text-left font-bold hover:bg-indigo-50';
+                b.textContent = opt.translation;
+                b.onclick = () => {
+                    if (opt.id === listeningTarget.id) {
+                        b.classList.add('bg-emerald-100','border-emerald-500');
+                        setTimeout(nextListeningQuestion, 500);
+                    } else {
+                        b.classList.add('bg-rose-100','border-rose-500');
+                        document.getElementById('listenPrompt').textContent = `Буруу. Зөв хариулт: ${listeningTarget.word} — ${listeningTarget.translation}`;
+                    }
+                };
+                box.appendChild(b);
+            });
+        }
+        async function translateFreeText() {
+            const input = document.getElementById('translateInput').value.trim();
+            const [from,to] = document.getElementById('translateDirection').value.split('|');
+            const output = document.getElementById('translateOutput');
+            if (!input) { output.textContent = 'Орчуулах текстээ оруулна уу.'; return; }
+            output.textContent = 'Орчуулж байна...';
+            try {
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(input)}&langpair=${from}|${to}`);
+                const data = await response.json();
+                output.textContent = data?.responseData?.translatedText || 'Орчуулга олдсонгүй.';
+            } catch (_) { output.textContent = 'Орчуулга амжилтгүй. Интернэт холболтоо шалгана уу.'; }
+        }
+
+        // The wordbook shows only words explicitly marked as learned, grouped by learning date.
+        const _srsReviewOriginal = srsReview;
+        srsReview = async function(remembered) {
+            const w = activeDueWords?.[currentIndex];
+            if (w && remembered) {
+                const today = new Date().toISOString().slice(0,10);
+                w.learnedAt = w.learnedAt || Date.now();
+                w.learnedDate = today;
+                userData.learnedHistory = userData.learnedHistory || {};
+                userData.learnedHistory[today] = [...new Set([...(userData.learnedHistory[today] || []), String(w.id)])];
+                userData.viewedHistory = userData.viewedHistory || {};
+                userData.viewedHistory[today] = [...new Set([...(userData.viewedHistory[today] || []), String(w.id)])];
+            } else if (w) {
+                const today = new Date().toISOString().slice(0,10);
+                userData.viewedHistory = userData.viewedHistory || {};
+                userData.viewedHistory[today] = [...new Set([...(userData.viewedHistory[today] || []), String(w.id)])];
+            }
+            await _srsReviewOriginal(remembered);
+            await saveUserData();
+            renderWordbook();
+        };
+
+        renderWordbook = function() {
+            const words = (userData.words || []).filter(w => w.learnedAt || w.learnedDate);
+            document.getElementById('wordCount').textContent = words.length;
+            const tabs = document.getElementById('wordbookDateTabs');
+            const container = document.getElementById('wordbookList');
+            tabs.innerHTML = ''; container.innerHTML = '';
+            const dates = [...new Set(words.map(w => w.learnedDate || new Date(w.learnedAt || Date.now()).toISOString().slice(0,10)))].sort().reverse();
+            const addTab = (date, label) => {
+                const b = document.createElement('button');
+                b.className = `px-3 py-2 rounded-xl text-xs font-bold ${selectedWordbookDate===date?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`;
+                b.textContent = label; b.onclick = () => { selectedWordbookDate = date; renderWordbook(); }; tabs.appendChild(b);
+            };
+            addTab('all','Бүх өдөр');
+            dates.forEach(d => addTab(d, d));
+            const shown = words.filter(w => selectedWordbookDate === 'all' || (w.learnedDate || new Date(w.learnedAt || Date.now()).toISOString().slice(0,10)) === selectedWordbookDate);
+            if (!shown.length) { container.innerHTML = '<p class="text-sm text-slate-400">Одоогоор цээжилсэн үг алга. Карт дээрх “Цээжилсэн” товчийг дарна уу.</p>'; return; }
+            shown.forEach(w => {
+                const card = document.createElement('div'); card.className = 'bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-3';
+                const info = document.createElement('div');
+                info.innerHTML = `<h4 class="font-extrabold text-slate-800">${escapeHTML(w.word)} <span class="text-xs text-indigo-600">${escapeHTML(w.level || w.category || '')}</span></h4><p class="text-sm text-slate-500">${escapeHTML(w.translation || '')}</p><p class="text-xs text-slate-400">${escapeHTML(w.example || '')}</p>`;
+                const actions = document.createElement('div'); actions.className = 'flex gap-1';
+                const edit = document.createElement('button'); edit.className='p-2 text-indigo-600'; edit.textContent='Засах'; edit.onclick=()=>openEditModal(w.id);
+                const del = document.createElement('button'); del.className='p-2 text-rose-500'; del.textContent='Устгах'; del.onclick=()=>deleteWord(w.id);
+                actions.append(edit,del); card.append(info,actions); container.appendChild(card);
+            });
+        };
+
+        // Record which words were studied on each day and make exam scopes deterministic.
+        const _renderFlashcardOriginal = renderFlashcard;
+        renderFlashcard = function() {
+            _renderFlashcardOriginal();
+            const w = activeDueWords?.[currentIndex];
+            if (w) {
+                const today = new Date().toISOString().slice(0,10);
+                userData.viewedHistory = userData.viewedHistory || {};
+                userData.viewedHistory[today] = [...new Set([...(userData.viewedHistory[today] || []), String(w.id)])];
+                w.lastViewedAt = Date.now();
+            }
+        };
+        const _nextCardOriginal = nextCard;
+        nextCard = function() { _nextCardOriginal(); saveUserData(); };
+        const _previousCardOriginal = previousCard;
+        previousCard = function() { _previousCardOriginal(); saveUserData(); };
+
+        startNewExam = function() {
+            const scope = document.getElementById('examScope')?.value || 'all';
+            const today = new Date().toISOString().slice(0,10);
+            const weekStart = Date.now() - 7*24*60*60*1000;
+            let pool = (userData.words || []).filter(w => w.word && w.translation);
+            if (scope === 'today') {
+                const ids = new Set(userData.viewedHistory?.[today] || []);
+                pool = pool.filter(w => ids.has(String(w.id)) || (w.lastViewedAt && new Date(w.lastViewedAt).toISOString().slice(0,10) === today));
+            } else if (scope === 'week') {
+                const ids = new Set(Object.entries(userData.viewedHistory || {}).filter(([d]) => (Date.now()-new Date(d+'T00:00:00').getTime()) <= 7*24*60*60*1000).flatMap(([,v])=>v));
+                pool = pool.filter(w => ids.has(String(w.id)) || (w.lastViewedAt && w.lastViewedAt >= weekStart));
+                const byLevel = {};
+                pool.forEach(w => { const l = w.level || classifyLevel(w.word); (byLevel[l] ||= []).push(w); });
+                pool = Object.values(byLevel).flatMap(list => list.sort(()=>Math.random()-.5).slice(0,25));
+            }
+            if (!pool.length) { alert(scope==='today'?'Өнөөдөр үзсэн үг алга. Эхлээд үг цээжилнэ үү.':'Шалгалтад ашиглах үг алга.'); return; }
+            const requested = scope === 'week' ? pool.length : Math.max(1, Math.min(100, Number(document.getElementById('examWordCountInput').value)||10));
+            examQuestions = pool.sort(()=>Math.random()-.5).slice(0, requested);
+            examCurrentIdx = 0; examScoreCount = 0; window.examMissedWords = [];
+            document.getElementById('examActiveBox').classList.remove('hidden');
+            document.getElementById('examHistoryBox').classList.add('hidden');
+            renderExamQuestion();
+        };
+        renderExamQuestion = function() {
+            if (examCurrentIdx >= examQuestions.length) { finishExam(); return; }
+            const q = examQuestions[examCurrentIdx];
+            document.getElementById('examQNum').textContent = examCurrentIdx+1;
+            document.getElementById('examTotalQ').textContent = examQuestions.length;
+            document.getElementById('examScore').textContent = examScoreCount;
+            document.getElementById('examQuestionText').textContent = q.word;
+            const opts = [q];
+            const pool = (userData.words||[]).filter(w=>w.id!==q.id && w.translation).sort(()=>Math.random()-.5);
+            opts.push(...pool.slice(0,3)); opts.sort(()=>Math.random()-.5);
+            const grid = document.getElementById('examOptionsGrid'); grid.innerHTML='';
+            document.getElementById('examFeedback').textContent='';
+            opts.forEach(opt=>{
+                const b=document.createElement('button'); b.className='p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-indigo-50 font-bold text-slate-700'; b.textContent=opt.translation;
+                b.onclick=()=>{
+                    grid.querySelectorAll('button').forEach(x=>x.disabled=true);
+                    if(String(opt.id)===String(q.id)) { examScoreCount++; b.className+=' bg-emerald-100 border-emerald-500'; }
+                    else { window.examMissedWords.push({word:q.word,translation:q.translation,chosen:opt.translation}); b.className+=' bg-rose-100 border-rose-500'; document.getElementById('examFeedback').textContent=`Буруу. Зөв хариулт: ${q.word} — ${q.translation}`; }
+                    document.getElementById('examScore').textContent=examScoreCount;
+                    setTimeout(()=>{examCurrentIdx++;renderExamQuestion();},700);
+                };
+                grid.appendChild(b);
+            });
+        };
+        const _finishExamOriginal = finishExam;
+        finishExam = async function() {
+            await _finishExamOriginal();
+            const missed = window.examMissedWords || [];
+            userData.examHistory[0].missedWords = missed;
+            await saveUserData();
+            const box = document.getElementById('examMissedList'); box.innerHTML='';
+            if (!missed.length) box.innerHTML='<p class="text-sm text-emerald-600">Алдсан үг байхгүй. Сайн байна!</p>';
+            else {
+                const h=document.createElement('h5'); h.className='font-bold text-sm mt-2'; h.textContent='Алдсан үгс'; box.appendChild(h);
+                missed.forEach(m=>{const d=document.createElement('div');d.className='p-3 border border-rose-200 bg-rose-50 rounded-xl text-sm';d.textContent=`${m.word} — зөв: ${m.translation}; таны хариулт: ${m.chosen}`;box.appendChild(d);});
+            }
+            checkExamRequirement();
+        };
+        renderExamHistory = function() {
+            const container=document.getElementById('examHistoryList'); container.innerHTML='';
+            const history=userData.examHistory||[];
+            if (!history.length) {container.innerHTML='<div class="text-xs text-slate-400 italic">Шалгалтын түүх байхгүй байна.</div>';return;}
+            history.forEach(item=>{
+                const d=document.createElement('div'); d.className='bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-semibold';
+                d.textContent=`${item.date} — Оноо: ${item.score} (${item.percent})`;
+                d.onclick=()=>{const box=document.getElementById('examMissedList');box.innerHTML='';(item.missedWords||[]).forEach(m=>{const x=document.createElement('div');x.className='p-3 rounded-xl bg-rose-50 text-sm';x.textContent=`${m.word} — зөв: ${m.translation}; таны хариулт: ${m.chosen}`;box.appendChild(x);});};
+                container.appendChild(d);
+            });
+        };
+
+        // Add-only-to-shared-bank behavior: adding a word must not enroll it for the current user.
+        addNewWord = async function() {
+            const word=document.getElementById('newWord').value.trim();
+            let translation=document.getElementById('newTranslation').value.trim();
+            const mnemonic=document.getElementById('newMnemonic').value.trim();
+            const example=document.getElementById('newExample').value.trim();
+            if(!word) return alert('Англи үгээ оруулна уу.');
+            if(!translation) { try { translation=await fetchTranslation(word); } catch(_) {} }
+            if(!translation) return alert('Орчуулга олдсонгүй. Орчуулгыг гараар оруулна уу.');
+            const level=classifyLevel(word);
+            try {
+                const saved=await upsertSharedWord(word,translation,mnemonic,example,level);
+                const item={id:String(saved.id),word:saved.word,translation:saved.translation,mnemonic:saved.mnemonic||'',example:saved.example||'',level:saved.level||level};
+                const old=core1500Bank.find(x=>x.word.toLowerCase()===word.toLowerCase());
+                if(old) Object.assign(old,item); else core1500Bank.unshift(item);
+                ['newWord','newTranslation','newMnemonic','newExample'].forEach(id=>document.getElementById(id).value='');
+                renderBankWords();
+                alert('Шинэ үг нийт үгсийн санд хадгалагдлаа. Таны цээжлэх жагсаалтад автоматаар нэмээгүй.');
+            } catch(e) {
+                alert('Нийтийн үгсийн санд хадгалж чадсангүй. shared_vocabulary хүснэгт болон RLS тохиргоог шалгана уу. ' + (e.message||''));
+            }
+        };
+
+        // Edit from any view updates the canonical shared word and all local copies.
+        saveEditWord = async function() {
+            const id=document.getElementById('editWordId').value;
+            const word=document.getElementById('editWordText').value.trim();
+            const translation=document.getElementById('editTranslationText').value.trim();
+            const mnemonic=document.getElementById('editMnemonicText').value.trim();
+            const example=document.getElementById('editExampleText').value.trim();
+            const w=(userData.words||[]).find(x=>String(x.id)===String(id));
+            const bank=core1500Bank.find(x=>String(x.id)===String(id)) || core1500Bank.find(x=>w && x.word.toLowerCase()===w.word.toLowerCase());
+            if(!word || !translation) return alert('Англи үг болон орчуулгыг бөглөнө үү.');
+            if(w) Object.assign(w,{word,translation,mnemonic,example,level:w.level||classifyLevel(word),phonetic:`/${word.toLowerCase()}/`});
+            if(bank) Object.assign(bank,{word,translation,mnemonic,example,level:bank.level||classifyLevel(word)});
+            try {
+                if(bank) await upsertSharedWord(word,translation,mnemonic,example,bank.level||classifyLevel(word));
+            } catch(e) { console.warn('Shared word update failed',e); }
+            userData.bankOverrides=userData.bankOverrides||{};
+            if(bank) userData.bankOverrides[String(bank.id)]={word,translation,mnemonic,example,level:bank.level};
+            await saveUserData(); closeEditModal(); renderBankWords(); renderWordbook(); filterSRSWords();
+        };
+
     </script>
 </body>
 </html>'''
