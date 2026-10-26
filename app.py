@@ -333,7 +333,10 @@ INDEX_HTML = '''<!DOCTYPE html>
                 </div>
                 <div id="listenPanel" class="hidden border rounded-2xl p-5 mb-4">
                     <h3 class="font-bold mb-2">Англи үгийг сонсоод зөв хариулт сонгох</h3>
-                    <button onclick="startListeningQuiz()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold">Эхлүүлэх</button>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="startListeningQuiz()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold">Эхлүүлэх</button>
+                        <button id="replayListeningButton" type="button" onclick="replayListeningQuestion()" aria-label="Одоогийн англи үгийг дахин сонсох" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border rounded-xl text-sm font-bold">🔊 Дахин сонсох</button>
+                    </div>
                     <p id="listenPrompt" class="text-sm text-slate-500 my-3">Эхлүүлэхэд үгийг автоматаар уншина.</p>
                     <div id="listenOptions" class="grid sm:grid-cols-2 gap-2"></div>
                 </div>
@@ -892,14 +895,44 @@ INDEX_HTML = '''<!DOCTYPE html>
         }
 
         function speakText(text) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'en-US';
-                speechSynthesis.speak(utterance);
+            if (!('speechSynthesis' in window) || !text) {
+                if (text) alert('Энэ хөтөч англи үгийг дуугаар унших боломжгүй байна. Chrome эсвэл Edge ашиглаж үзнэ үү.');
+                return;
             }
+            const synth = window.speechSynthesis;
+            synth.cancel();
+            const utterance = new SpeechSynthesisUtterance(String(text));
+            utterance.lang = 'en-US';
+            utterance.rate = 0.82; // slightly slower than normal
+            utterance.pitch = 1.0;
+            const chooseAmericanVoice = () => {
+                const voices = synth.getVoices() || [];
+                return voices.find(v => /^en-US$/i.test(v.lang) && /natural|enhanced|google|microsoft|aria|jenny|samantha/i.test(v.name))
+                    || voices.find(v => /^en-US(?:-|$)/i.test(v.lang))
+                    || voices.find(v => /^en/i.test(v.lang));
+            };
+            const voice = chooseAmericanVoice();
+            if (voice) utterance.voice = voice;
+            // Some browsers load voice lists asynchronously; retry voice selection if needed.
+            if (!voice && typeof synth.onvoiceschanged !== 'undefined') {
+                synth.onvoiceschanged = () => {
+                    const loadedVoice = chooseAmericanVoice();
+                    if (loadedVoice) utterance.voice = loadedVoice;
+                };
+            }
+            synth.speak(utterance);
         }
         function speakCurrentWord() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].word); }
         function speakCurrentExample() { if (activeDueWords.length > 0) speakText(activeDueWords[currentIndex].example); }
+
+        function openBolorLookup() {
+            const input = document.getElementById('newWord');
+            const word = (input?.value || '').trim();
+            if (!word) { alert('Эхлээд англи үгээ оруулна уу.'); return; }
+            // Open the official dictionary search page. Do not scrape or automatically copy its content.
+            const url = 'https://bolor-toli.com/result/?direction=1&word=' + encodeURIComponent(word);
+            window.open(url, '_blank', 'noopener');
+        }
 
         async function autoGenerateWordInfo() {
             const wordInput = document.getElementById('newWord').value.trim().toLowerCase();
@@ -1254,13 +1287,24 @@ INDEX_HTML = '''<!DOCTYPE html>
         }
         async function addDailyWordsIfNeeded(force = false) {
             if (!currentUserSession || !userData) return;
-            const today = new Date().toISOString().slice(0,10);
+            userData.words = Array.isArray(userData.words) ? userData.words : [];
+            const today = getLocalDateKey();
             const count = Math.max(1, Math.min(50, Number(userData.dailyWordCount) || dailyWordCount || 5));
-            if (!force && userData.lastDailyWordDate === today) return;
-            const existing = new Set((userData.words || []).map(w => w.word.toLowerCase()));
+
+            // Today's selection is immutable across logout/login and devices.
+            if (!force && userData.lastDailyWordDate === today &&
+                Array.isArray(userData.dailyWordIds) && userData.dailyWordIds.length) {
+                const savedIds = new Set(userData.dailyWordIds.map(String));
+                const savedWordsStillPresent = userData.words.filter(w => savedIds.has(String(w.id)));
+                if (savedWordsStillPresent.length) return;
+            }
+
+            const existing = new Set(userData.words.map(w => String(w.word || '').toLowerCase()));
+            const selectedIds = [];
             let added = 0;
             for (const level of LEVELS) {
-                const candidates = core1500Bank.filter(b => b.level === level && !existing.has(b.word.toLowerCase()))
+                const candidates = core1500Bank
+                    .filter(b => b.level === level && b.word && !existing.has(String(b.word).toLowerCase()))
                     .sort(() => Math.random() - 0.5).slice(0, count);
                 for (const b of candidates) {
                     let translation = b.translation || '';
@@ -1268,20 +1312,27 @@ INDEX_HTML = '''<!DOCTYPE html>
                         try { translation = await fetchTranslation(b.word); } catch (_) {}
                         if (translation) b.translation = translation;
                     }
-                    if (existing.has(b.word.toLowerCase())) continue;
-                    userData.words.push({ id: Date.now() + Math.random(), word: b.word, phonetic: `/${b.word.toLowerCase()}/`,
-                        translation: translation || 'Орчуулга хараахан олдоогүй', mnemonic: b.mnemonic || '',
-                        example: b.example || makeBankExample(b.word, b.level), category: `CEFR ${level}`,
-                        level, srsLevel: 0, nextReviewDate: Date.now(),
-                        image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300' });
-                    existing.add(b.word.toLowerCase()); added++;
+                    const key = String(b.word).toLowerCase();
+                    if (existing.has(key)) continue;
+                    const id = `daily-${today}-${String(b.id || key).replace(/[^a-zA-Z0-9_-]/g, '').slice(0,40)}-${Math.random().toString(36).slice(2,7)}`;
+                    userData.words.push({
+                        id, word: b.word, phonetic: `/${String(b.word).toLowerCase()}/`,
+                        translation: translation || 'Орчуулга хараахан олдоогүй',
+                        mnemonic: b.mnemonic || '', example: b.example || makeBankExample(b.word, b.level),
+                        category: `CEFR ${level}`, level, srsLevel: 0, nextReviewDate: Date.now(),
+                        dailyDate: today,
+                        image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=300'
+                    });
+                    existing.add(key); selectedIds.push(String(id)); added++;
                 }
             }
             userData.lastDailyWordDate = today;
             userData.dailyWordCount = count;
+            userData.dailyWordIds = selectedIds;
+            await saveUserData();
             if (added) {
-                await saveUserData();
-                filterSRSWords(); renderWordbook();
+                filterSRSWords();
+                renderWordbook();
             } else if (force) {
                 alert('Таны үгсийн санд байгаа үгсийг давхар нэмсэнгүй. Нэмэх шинэ үг үлдээгүй байж болно.');
             }
@@ -1466,11 +1517,34 @@ INDEX_HTML = '''<!DOCTYPE html>
         let listeningQueue = [];
         let listeningTarget = null;
 
-        const _saveUserDataOriginal = saveUserData;
+        // One cloud write only. Check both Supabase errors and RLS-filtered zero-row updates.
         saveUserData = async function() {
+            filterSRSWords();
+            if (!currentUserSession || !supabaseClient) {
+                throw new Error('Нэвтэрсэн хэрэглэгч эсвэл Supabase холболт алга.');
+            }
             userData.updatedAt = Date.now();
-            await _saveUserDataOriginal();
+            const { data, error } = await supabaseClient
+                .from('user_profiles')
+                .update({ app_data: userData, updated_at: new Date().toISOString() })
+                .eq('id', currentUserSession.id)
+                .select('id')
+                .maybeSingle();
+            if (error) {
+                console.error('Cloud save failed:', error);
+                throw new Error('Supabase хадгалалтын алдаа: ' + (error.message || error.code || 'тодорхойгүй'));
+            }
+            if (!data) {
+                throw new Error('user_profiles мөр UPDATE эрхийн бодлогоор хаагдсан эсвэл таны id-тай мөр байхгүй байна. SQL засварыг ажиллуулна уу.');
+            }
         };
+
+        function getLocalDateKey(date = new Date()) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
 
         const _loadCloudOriginal = loadUserDataFromCloud;
         loadUserDataFromCloud = async function() {
@@ -1524,12 +1598,21 @@ INDEX_HTML = '''<!DOCTYPE html>
             const english = document.getElementById('phraseEnglish').value.trim();
             const mongolian = document.getElementById('phraseMongolian').value.trim();
             if (!english || !mongolian) return alert('Англи холбоо үг болон монгол утгыг бөглөнө үү.');
-            userData.phrases = userData.phrases || [];
-            userData.phrases.push({id: Date.now(), english, mongolian, createdAt: Date.now()});
-            await saveUserData();
-            document.getElementById('phraseEnglish').value = '';
-            document.getElementById('phraseMongolian').value = '';
-            renderPhraseList();
+            userData.phrases = Array.isArray(userData.phrases) ? userData.phrases : [];
+            const duplicate = userData.phrases.some(p => String(p.english || '').trim().toLowerCase() === english.toLowerCase());
+            if (duplicate) return alert('Энэ холбоо үг аль хэдийн хадгалагдсан байна.');
+            userData.phrases.push({id: `phrase-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, english, mongolian, createdAt: Date.now()});
+            try {
+                await saveUserData();
+                document.getElementById('phraseEnglish').value = '';
+                document.getElementById('phraseMongolian').value = '';
+                renderPhraseList();
+                alert('Холбоо үг үүлэн санд хадгалагдлаа. Ижил бүртгэлээр өөр төхөөрөмжөөс нэвтрэхэд харагдана.');
+            } catch (e) {
+                userData.phrases = userData.phrases.filter(p => p.english !== english);
+                alert('Хадгалж чадсангүй. Интернэт болон Supabase-ийн user_profiles UPDATE эрхийг шалгана уу.');
+                console.error(e);
+            }
         }
         function renderPhraseList() {
             const box = document.getElementById('phraseList'); if (!box) return;
@@ -1553,6 +1636,14 @@ INDEX_HTML = '''<!DOCTYPE html>
             content.classList.toggle('hidden', mode !== 'quiz');
             document.getElementById('quizCompleted').classList.add('hidden');
         }
+        function replayListeningQuestion() {
+            if (!listeningTarget || !listeningTarget.word) {
+                return alert('Эхлээд сонсох сорилтыг эхлүүлнэ үү.');
+            }
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            speakText(listeningTarget.word);
+        }
+
         function startListeningQuiz() {
             listeningQueue = [...(userData.words || [])].filter(w => w.word && w.translation);
             if (!listeningQueue.length) return alert('Сонсох сорилтод ашиглах үг алга.');
@@ -1606,7 +1697,7 @@ INDEX_HTML = '''<!DOCTYPE html>
         srsReview = async function(remembered) {
             const w = activeDueWords?.[currentIndex];
             if (w && remembered) {
-                const today = new Date().toISOString().slice(0,10);
+                const today = getLocalDateKey();
                 w.learnedAt = w.learnedAt || Date.now();
                 w.learnedDate = today;
                 userData.learnedHistory = userData.learnedHistory || {};
@@ -1614,7 +1705,7 @@ INDEX_HTML = '''<!DOCTYPE html>
                 userData.viewedHistory = userData.viewedHistory || {};
                 userData.viewedHistory[today] = [...new Set([...(userData.viewedHistory[today] || []), String(w.id)])];
             } else if (w) {
-                const today = new Date().toISOString().slice(0,10);
+                const today = getLocalDateKey();
                 userData.viewedHistory = userData.viewedHistory || {};
                 userData.viewedHistory[today] = [...new Set([...(userData.viewedHistory[today] || []), String(w.id)])];
             }
@@ -1656,7 +1747,7 @@ INDEX_HTML = '''<!DOCTYPE html>
             _renderFlashcardOriginal();
             const w = activeDueWords?.[currentIndex];
             if (w) {
-                const today = new Date().toISOString().slice(0,10);
+                const today = getLocalDateKey();
                 userData.viewedHistory = userData.viewedHistory || {};
                 userData.viewedHistory[today] = [...new Set([...(userData.viewedHistory[today] || []), String(w.id)])];
                 w.lastViewedAt = Date.now();
@@ -1669,7 +1760,7 @@ INDEX_HTML = '''<!DOCTYPE html>
 
         startNewExam = function() {
             const scope = document.getElementById('examScope')?.value || 'all';
-            const today = new Date().toISOString().slice(0,10);
+            const today = getLocalDateKey();
             const weekStart = Date.now() - 7*24*60*60*1000;
             let pool = (userData.words || []).filter(w => w.word && w.translation);
             if (scope === 'today') {
